@@ -26,3 +26,9 @@ disk_load:
 
 .disk_loop:
     jmp $
+DAP:
+    packet_size db 0x10
+    reserved db 0x00
+    sector_count dw 0x00
+    off-set dw 0x0000
+    segment dw 0x0000

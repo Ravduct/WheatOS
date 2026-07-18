@@ -2,11 +2,13 @@
 [bits 16]
 
 _start:
-    KERNEL_OFFSET equ 0x1000
-    mov [boot_drive], dl
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov sp, 0x7C00
 
-    mov bp, 0x9000
-    mov sp, bp
+    mov [boot_drive], dl
 
     call load_kernel
     call switch_to_32bit

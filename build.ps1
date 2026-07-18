@@ -1,5 +1,5 @@
-& "C:\Program Files\NASM\nasm.exe" -f bin boot.asm -o boot.bin
-& "C:\Program Files\NASM\nasm.exe" -f bin stage2.asm -o stage2.bin
+& NASM -f bin boot.asm -o boot.bin
+& NASM -f bin stage2.asm -o stage2.bin
 
 del disk.img -ErrorAction SilentlyContinue
 del disk.vdi -ErrorAction SilentlyContinue

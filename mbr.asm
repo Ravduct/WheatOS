@@ -2,14 +2,17 @@
 [bits 16]
 
 _start:
+    ; registers and stack setup
     xor ax, ax
     mov ds, ax
     mov es, ax
     mov ss, ax
     mov sp, 0x7C00
 
+    ;save boot drive number
     mov [boot_drive], dl
 
+    ;not yet
     call load_kernel
     call switch_to_32bit
 

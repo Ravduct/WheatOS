@@ -1,8 +1,8 @@
-& NASM -f bin boot.asm -o boot.bin
+& NASM -f bin mbr.asm -o mbr.bin
 & NASM -f bin stage2.asm -o stage2.bin
 
-del disk.img -ErrorAction SilentlyContinue
-del disk.vdi -ErrorAction SilentlyContinue
+Remove-Item disk.img -ErrorAction SilentlyContinue
+Remove-Item disk.vdi -ErrorAction SilentlyContinue
 
 cmd /c copy /b boot.bin+stage2.bin disk.img
 

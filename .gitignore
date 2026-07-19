@@ -1,3 +1,4 @@
 disk.img
 boot.bin
+mbr.bin
 stage2.bin

@@ -17,15 +17,16 @@ _start:
     continue:
     call check_int13h
     
-    ;not yet
-    call load_kernel
-    call switch_to_32bit
+    ;disk load
+    mov word [sector_count], 4
+    mov word [my_offset], 0x8000
+    mov word [my_segment], 0x0000
+    mov dword [lba_low], 1
 
-    jmp $
+    call disk_load
+    jmp 0x0000:0x8000
 
 %include "disk.asm"
-%include "gdt.asm"
-%include "switch-to-32bit.asm"
 
 [bits 16]
 check_int13h:
@@ -37,19 +38,7 @@ check_int13h:
     cmp bx, 0xAA55
     jne .error
     ret
-load_kernel:
-    mov bx, KERNEL_OFFSET
-    mov dh, 2
-    mov dl, [boot_drive]
-    call disk_load
-    ret
-
 .error:
-    jmp $
-
-[bits 32]
-begin_32bit:
-    call KERNEL_OFFSET
     jmp $
 
 boot_drive db 0

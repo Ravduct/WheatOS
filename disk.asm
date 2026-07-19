@@ -1,3 +1,4 @@
+;main function
 disk_load:
     pusha
     mov cx, 3
@@ -21,6 +22,8 @@ disk_load:
 
 .disk_error:
     jmp $
+
+;variables
 DAP:
     packet_size db 0x10
     reserved db 0x00

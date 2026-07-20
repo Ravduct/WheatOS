@@ -37,8 +37,9 @@ check_a20:
     mov byte [es:di], bl ; claude tell me to
     
     cmp al, dl
-    je .enable_a20
+    jne .a20_is_on
 
+    mov byte [a20_status], 0
     pop ax
     pop si
     pop di
@@ -46,13 +47,18 @@ check_a20:
     pop ds
     popf
     ret
-
-    .enable_a20:
+    .a20_is_on:
+        mov byte [a20_status], 1
         pop ax
         pop si
         pop di
         pop es
         pop ds
         popf
+        ret
 
-        ;code 
+.enable_a20:
+    ;code 
+
+
+a20_status: db 0

@@ -4,7 +4,9 @@
 global print_string
 print_string:
     ; Prints characters starting at label 'string' until a NUL byte
-    push ds
+    push si
+    push ax
+    push bx
     cld
     ; assume data is in same segment as code; load DS if needed by caller
     .print_loop:
@@ -17,5 +19,7 @@ print_string:
         int 0x10
         jmp .print_loop
     .done:
-        pop ds
+        pop bx
+        pop ax
+        pop si
         ret

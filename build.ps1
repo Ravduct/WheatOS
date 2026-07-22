@@ -4,8 +4,6 @@
 Remove-Item disk.img -ErrorAction SilentlyContinue
 Remove-Item disk.vdi -ErrorAction SilentlyContinue
 
-cmd /c copy /b boot.bin+stage2.bin disk.img
-
-& "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" convertfromraw disk.img disk.vdi --format VDI
+cmd /c copy /b mbr.bin+stage2.bin disk.img
 
 & qemu-system-x86_64.exe -drive format=raw,file=disk.img

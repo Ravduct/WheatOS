@@ -1,13 +1,13 @@
 ;main function
-extern boot_drive
 
+extern boot_drive
 disk_load:
     pusha
     mov cx, 3
 
     .retry:
+        ; dl = boot_drive
         mov ah, 0x42
-        mov dl, [boot_drive]
         mov si, DAP
 
         int 0x13

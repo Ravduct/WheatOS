@@ -10,17 +10,21 @@ mov es, ax
 mov ss, ax
 mov sp, 0x7C00
 
-call enable_a20
-mov si, "a20 enabled"
-call print_string
-jmp .halt
+stage2_main:
+    mov si, stage2_begin_msg
+    call print_string
+    call enable_a20
+    mov si, a20_ready
+    call print_string
+
+    jmp halt
 
 enable_a20:
     push ax
     push bx
 
-    mov     ax, 0x2401
-    int     0x15
+    mov ax, 0x2401
+    int 0x15
     call check_a20
     cmp byte [a20_status], 1
     je .exit
@@ -69,13 +73,15 @@ enable_a20:
     cmp byte [a20_status], 1
     je .exit
 
-    jmp .halt
+    jmp halt
 
 .exit:
     pop bx
     pop ax
     ret
-.halt:
+halt:
+    mov si, stage2_error_msg
+    call print_string
     jmp $
 
 check_a20:
@@ -135,3 +141,6 @@ check_a20:
         ret
 
 a20_status: db 0
+stage2_begin_msg db "stage 2 ready", 0
+a20_ready db "a20 enabled", 0
+stage2_error_msg db "stage 2 error", 0

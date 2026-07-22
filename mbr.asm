@@ -1,6 +1,9 @@
 [org 0x7C00]
 [bits 16]
 
+global boot_drive
+%include "disk.asm"
+
 _start:
     ; registers and stack setup
     xor ax, ax
@@ -25,8 +28,6 @@ _start:
 
     call disk_load
     jmp 0x0000:0x8000
-
-%include "disk.asm"
 
 [bits 16]
 check_int13h:

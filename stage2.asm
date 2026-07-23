@@ -1,9 +1,6 @@
 [org 0x8000]
 [bits 16]
 
-%include "disk.asm"
-%include "print.asm"
-
 xor ax, ax
 mov ds, ax
 mov es, ax
@@ -18,6 +15,9 @@ stage2_main:
     call print_string
 
     jmp halt
+
+%include "disk.asm"
+%include "print.asm"
 
 enable_a20:
     push ax
@@ -80,7 +80,7 @@ enable_a20:
     pop ax
     ret
 halt:
-    mov si, stage2_error_msg
+    mov si, stage2_exit_msg
     call print_string
     jmp $
 
@@ -143,4 +143,4 @@ check_a20:
 a20_status: db 0
 stage2_begin_msg db "stage 2 ready", 0
 a20_ready db "a20 enabled", 0
-stage2_error_msg db "stage 2 error", 0
+stage2_exit_msg db "stage 2 exit", 0

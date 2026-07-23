@@ -19,6 +19,18 @@ print_string:
         int 0x10
         jmp .print_loop
     .done:
+        mov al, 0x0D    ; carriage return
+        mov ah, 0x0E
+        mov bh, 0x00
+        mov bl, 0x07
+        int 0x10
+
+        mov al, 0x0A    ; line feed
+        mov ah, 0x0E
+        mov bh, 0x00
+        mov bl, 0x07
+        int 0x10
+
         pop bx
         pop ax
         pop si

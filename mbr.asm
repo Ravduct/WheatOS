@@ -2,8 +2,6 @@
 [bits 16]
 
 global boot_drive
-%include "disk.asm"
-%include "print.asm"
 
 _start:
     ; registers and stack setup
@@ -35,6 +33,9 @@ _start:
     mov si, stage1_ready_msg
     call print_string
     jmp 0x0000:0x8000
+
+%include "disk.asm"
+%include "print.asm"
 
 [bits 16]
 check_int13h:

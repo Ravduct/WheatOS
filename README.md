@@ -19,3 +19,9 @@
   - Answer your questions about this OS
   - It can be your friend to talk about daily life
   - Can make changes in your device files if needed
+
+## License
+
+Copyright © 2026 Huu Thang Tu. All rights reserved.
+
+This project is proprietary. Copying, modification, redistribution, or commercial use is not permitted without written permission.

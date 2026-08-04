@@ -119,4 +119,3 @@ check_a20:
 
 a20_ready db "a20 enabled", 0
 a20_status: db 0
-

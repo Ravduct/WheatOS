@@ -13,6 +13,12 @@ stage2_main:
     call enable_a20
     call e820_memory_map
 
+    mov word [sector_count], 1
+    mov word [my_offset], 0x0010
+    mov word [my_segment], 0xFFFF
+    mov dword [lba_low], 4
+    call disk_load
+
     jmp halt
 
 %include "disk.asm"

@@ -4,6 +4,6 @@
 Remove-Item disk.img -ErrorAction SilentlyContinue
 Remove-Item disk.vdi -ErrorAction SilentlyContinue
 
-cmd /c copy /b mbr.bin+stage2.bin disk.img
+cmd /c copy /b mbr.bin+stage2.bin+kernel.bin disk.img
 
 & qemu-system-x86_64.exe -drive format=raw,file=disk.img

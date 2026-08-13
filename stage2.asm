@@ -37,8 +37,8 @@ stage2_main:
 
 [bits 32]
 protected_mode:
-    jmp halt
 
+    jmp halt
 
 halt:
     ;mov si, stage2_exit_msg
@@ -46,5 +46,5 @@ halt:
     jmp $
 
 stage2_begin_msg db "stage 2 ready", 0
-stage2_exit_msg db "stage 2 exit, in protected mode", 0
+stage2_exit_msg db "stage 2 exit,", 0
 pm_msg db "Protected mode enabled", 0

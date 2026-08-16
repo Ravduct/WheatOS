@@ -37,7 +37,11 @@ stage2_main:
 
 [bits 32]
 protected_mode:
+    call enable_paging
+    jmp long_mode
 
+[bits 64]
+long_mode:
     jmp halt
 
 halt:

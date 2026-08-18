@@ -12,7 +12,7 @@ align 4096
 pd_table:
     %assign i 0
     %rep 512
-        dq (i * 0x200000) + 0x83
+        dq (i * 0x200000) | 0x83
         %assign i i + 1
     %endrep
 enable_paging:
@@ -23,4 +23,12 @@ enable_paging:
     bts eax, 5
     mov cr4, eax
 
-    
+    mov ecx, 0xC0000080
+    rdmsr
+    bts eax, 8
+    wrmsr
+
+    mov eax, cr0
+    bts eax, 31
+    mov cr0, eax
+    ret

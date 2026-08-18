@@ -14,6 +14,7 @@ jmp stage2_main
 %include "a20.asm"
 %include "gdt.asm"
 %include "print_32bit.asm"
+%include "paging.asm"
 
 stage2_main:
     mov si, stage2_begin_msg
@@ -38,10 +39,18 @@ stage2_main:
 [bits 32]
 protected_mode:
     call enable_paging
-    jmp long_mode
+    mov ax, DATA_SEG64
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov fs, ax
+    mov gs, ax
+    jmp CODE_SEG64:long_mode
 
 [bits 64]
 long_mode:
+    
+
     jmp halt
 
 halt:

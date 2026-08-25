@@ -1,6 +1,6 @@
 ;main function
 
-extern boot_drive
+
 disk_load:
     pusha
     mov cx, 3

@@ -6,26 +6,22 @@ mov ds, ax
 mov es, ax
 mov ss, ax
 mov sp, 0x7C00
+
 jmp stage2_main
 
-%include "disk.asm"
-%include "print.asm"
-%include "e820.asm"
-%include "a20.asm"
-%include "gdt.asm"
-%include "print_32bit.asm"
-%include "paging.asm"
-
 stage2_main:
+    mov [stage2_boot_drive], dl
     mov si, stage2_begin_msg
     call print_string
     call enable_a20
     call e820_memory_map
+    jmp halt
 
+    mov dl, [stage2_boot_drive]
     mov word [sector_count], 1
     mov word [my_offset], 0x0010
     mov word [my_segment], 0xFFFF
-    mov dword [lba_low], 4
+    mov dword [lba_low], 34
     call disk_load
 
     cli
@@ -36,20 +32,38 @@ stage2_main:
     mov cr0, eax
     jmp CODE_SEG:protected_mode
 
+%include "disk.asm"
+%include "print.asm"
+%include "e820.asm"
+%include "a20.asm"
+%include "gdt.asm"
+%include "print32bit.asm"
+%include "paging.asm"
+
 [bits 32]
 protected_mode:
-    call enable_paging
-    mov ax, DATA_SEG64
+    ;mov ax, DATA_SEG
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+
+    ;call enable_paging
+    ;mov ax, DATA_SEG64
     mov ds, ax
     mov es, ax
     mov ss, ax
     mov fs, ax
     mov gs, ax
-    jmp CODE_SEG64:long_mode
+    ;jmp CODE_SEG64:long_mode
 
 [bits 64]
 long_mode:
-    
+    mov rax, 0x800000
+    mov rsp, rax
+    mov rbp, rax
+
+    ;mov rsi, long_mode_msg
+    ;call print_string_pm
 
     jmp halt
 
@@ -58,6 +72,9 @@ halt:
     ;call print_string
     jmp $
 
+stage2_loading db "loading stage 2...", 0
 stage2_begin_msg db "stage 2 ready", 0
 stage2_exit_msg db "stage 2 exit,", 0
-pm_msg db "Protected mode enabled", 0
+protected_mode_msg db "Protected mode enabled", 0
+long_mode_msg db "Long mode enabled", 0
+stage2_boot_drive db 0

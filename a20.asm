@@ -2,15 +2,15 @@ enable_a20:
     push ax
     push bx
 
-    mov ax, 0x2401
-    int 0x15
+    in al, 0x92
+    or al, 2
+    out 0x92, al
     call check_a20
     cmp byte [a20_status], 1
     je .a20_exit
 
-    in al, 0x92
-    or al, 2
-    out 0x92, al
+    mov ax, 0x2401
+    int 0x15
     call check_a20
     cmp byte [a20_status], 1
     je .a20_exit
@@ -93,7 +93,6 @@ check_a20:
     jne .a20_is_on
 
     mov byte [a20_status], 0
-    sti
     pop dx
     pop bx
     pop ax
@@ -106,7 +105,6 @@ check_a20:
 
     .a20_is_on:
         mov byte [a20_status], 1
-        sti
         pop dx
         pop bx
         pop ax

@@ -23,7 +23,7 @@ _start:
     call check_int13h
     
     ;disk load
-    mov word [sector_count], 3
+    mov word [sector_count], 33
     mov word [my_offset], 0x8000
     mov word [my_segment], 0x0000
     mov dword [lba_low], 1

@@ -1,7 +1,7 @@
 ; print.asm - simple BIOS teletype string printer
 ; Usage: call print_string
 
-global print_string
+[bits 16]
 print_string:
     ; Prints characters starting at label 'string' until a NUL byte
     push si
@@ -34,4 +34,19 @@ print_string:
         pop bx
         pop ax
         pop si
+        ret
+
+[bits 32]
+print_string_pm:
+    mov ebx, 0xB8000
+    .loop:
+        mov al, [esi]
+        cmp al, 0
+        je .done
+        mov [ebx], al
+        mov byte [ebx+1], 0x0F
+        add ebx, 2
+        inc esi
+        jmp .loop
+    .done:
         ret

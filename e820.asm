@@ -1,3 +1,4 @@
+[bits 16]
 e820_memory_map:
     push eax
     push edx

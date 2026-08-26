@@ -1,3 +1,4 @@
+[bits 32]
 align 4096
 pml4_table:
     dq pdpt_table + 0x3

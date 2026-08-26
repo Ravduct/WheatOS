@@ -1,3 +1,4 @@
+[bits 16]
 gdt_start:
     dq 0x0
 

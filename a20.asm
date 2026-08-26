@@ -1,4 +1,7 @@
+[bits 16]
 enable_a20:
+    mov si, a20_loaded
+    call print_string
     push ax
     push bx
 
@@ -92,6 +95,7 @@ check_a20:
     cmp al, dl
     jne .a20_is_on
 
+    sti
     mov byte [a20_status], 0
     pop dx
     pop bx
@@ -104,6 +108,7 @@ check_a20:
     ret
 
     .a20_is_on:
+        sti
         mov byte [a20_status], 1
         pop dx
         pop bx
@@ -117,3 +122,4 @@ check_a20:
 
 a20_ready db "a20 enabled", 0
 a20_status: db 0
+a20_loaded db "a20 loaded", 0

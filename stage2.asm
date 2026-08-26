@@ -6,16 +6,21 @@ mov ds, ax
 mov es, ax
 mov ss, ax
 mov sp, 0x7C00
+mov [stage2_boot_drive], dl
 
 jmp stage2_main
 
+%include "disk.asm"
+%include "print.asm"
+%include "e820.asm"
+%include "a20.asm"
+%include "gdt.asm"
+%include "paging.asm"
+
+[bits 16]
 stage2_main:
-    mov [stage2_boot_drive], dl
-    mov si, stage2_begin_msg
-    call print_string
     call enable_a20
     call e820_memory_map
-    jmp halt
 
     mov dl, [stage2_boot_drive]
     mov word [sector_count], 1
@@ -24,6 +29,10 @@ stage2_main:
     mov dword [lba_low], 34
     call disk_load
 
+    mov si, stage2_begin_msg
+    call print_string
+    jmp halt
+
     cli
     lgdt [gdt_descriptor]
 
@@ -31,14 +40,6 @@ stage2_main:
     or eax, 1
     mov cr0, eax
     jmp CODE_SEG:protected_mode
-
-%include "disk.asm"
-%include "print.asm"
-%include "e820.asm"
-%include "a20.asm"
-%include "gdt.asm"
-%include "print32bit.asm"
-%include "paging.asm"
 
 [bits 32]
 protected_mode:

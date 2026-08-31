@@ -1,4 +1,5 @@
 ;main function
+[bits 16]
 
 disk_load:
     mov si, disk_start_msg

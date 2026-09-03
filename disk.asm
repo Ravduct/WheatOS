@@ -10,7 +10,7 @@ disk_load:
     .retry:
         mov si, disk_looping_msg
         call print_string
-        ; dl = boot_drive
+        ; dl = boot drive
         mov ah, 0x42
         mov si, DAP
 

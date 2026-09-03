@@ -6,7 +6,7 @@ mov ds, ax
 mov es, ax
 mov ss, ax
 mov sp, 0x7C00
-mov [stage2_boot_drive], dl
+mov [boot_drive], dl
 
 jmp stage2_main
 
@@ -22,7 +22,7 @@ stage2_main:
     call enable_a20
     call e820_memory_map
 
-    mov dl, [stage2_boot_drive]
+    mov dl, [boot_drive]
     mov word [sector_count], 1
     mov word [my_offset], 0x0010
     mov word [my_segment], 0xFFFF
@@ -78,4 +78,4 @@ stage2_begin_msg db "stage 2 ready", 0
 stage2_exit_msg db "stage 2 exit,", 0
 protected_mode_msg db "Protected mode enabled", 0
 long_mode_msg db "Long mode enabled", 0
-stage2_boot_drive db 0
+boot_drive db 0

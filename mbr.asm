@@ -1,8 +1,6 @@
 [org 0x7C00]
 [bits 16]
 
-global boot_drive
-
 _start:
     ; registers and stack setup
     xor ax, ax

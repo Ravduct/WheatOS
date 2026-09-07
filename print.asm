@@ -50,3 +50,18 @@ print_string_pm:
         jmp .loop
     .done:
         ret
+
+[bits 64]
+print_string_lm:
+    mov rbx, 0xB8000
+    .loop:
+        mov al, [rsi]
+        cmp al, 0
+        je .done
+        mov [rbx], al
+        mov byte [rbx+1], 0x0F
+        add rbx, 2
+        inc rsi
+        jmp .loop
+    .done:
+        ret

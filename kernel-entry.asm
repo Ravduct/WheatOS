@@ -3,7 +3,13 @@
 
 times 512 db 0x90
 
+mov al, dil
+add al, '0'
+
 mov rbx, 0xB8000
 mov byte [rbx], 'K'
 mov byte [rbx+1], 0x0F
+
+mov byte [rbx+2], al
+mov byte [rbx+3], 0x0F
 jmp $

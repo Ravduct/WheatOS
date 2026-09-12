@@ -1,3 +1,4 @@
+DEFAULT ABS
 [org 0x8000]
 [bits 16]
 
@@ -98,6 +99,10 @@ long_mode:
 
     mov rsi, long_mode_msg
     call print_string_lm
+
+    mov rdi, e820_buffer
+    xor rsi, rsi
+    mov sil, [entry_count]
 
     jmp 0xD000
 

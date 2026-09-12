@@ -1,16 +1,17 @@
-     1                                  [org 0x8000]
-     2                                  [bits 16]
-     3                                  
-     4 00000000 31C0                    xor ax, ax
-     5 00000002 8ED8                    mov ds, ax
-     6 00000004 8EC0                    mov es, ax
-     7 00000006 8ED0                    mov ss, ax
-     8 00000008 BC007C                  mov sp, 0x7C00
-     9 0000000B 8816[3A41]              mov [boot_drive], dl
-    10                                  
-    11 0000000F E91840                  jmp stage2_main
-    12                                  
-    13                                  %include "disk.asm"
+     1                                  DEFAULT ABS
+     2                                  [org 0x8000]
+     3                                  [bits 16]
+     4                                  
+     5 00000000 31C0                    xor ax, ax
+     6 00000002 8ED8                    mov ds, ax
+     7 00000004 8EC0                    mov es, ax
+     8 00000006 8ED0                    mov ss, ax
+     9 00000008 BC007C                  mov sp, 0x7C00
+    10 0000000B 8816[4F41]              mov [boot_drive], dl
+    11                                  
+    12 0000000F E91840                  jmp stage2_main
+    13                                  
+    14                                  %include "disk.asm"
      1                              <1> ;main function
      2                              <1> [bits 16]
      3                              <1> 
@@ -68,7 +69,7 @@
     51 00000091 207375636365656400  <1>
     52 0000009A 6469736B206C6F6164- <1> disk_stable_msg db "disk load stable", 0
     52 000000A3 20737461626C6500    <1>
-    14                                  %include "print.asm"
+    15                                  %include "print.asm"
      1                              <1> ; print.asm - simple BIOS teletype string printer
      2                              <1> ; Usage: call print_string
      3                              <1> 
@@ -136,7 +137,7 @@
     65 00000106 EBEB                <1>         jmp .loop
     66                              <1>     .done:
     67 00000108 C3                  <1>         ret
-    15                                  %include "e820.asm"
+    16                                  %include "e820.asm"
      1                              <1> [bits 16]
      2                              <1> e820_memory_map:
      3 00000109 6650                <1>     push eax
@@ -188,7 +189,7 @@
     48 00000172 653832302066696E69- <1> e820_finish_msg db "e820 finished", 0
     48 0000017B 7368656400          <1>
     49 00000180 00<rep 300h>        <1> e820_buffer: times 768 db 0
-    16                                  %include "a20.asm"
+    17                                  %include "a20.asm"
      1                              <1> [bits 16]
      2                              <1> enable_a20:
      3 00000480 BE[4805]            <1>     mov si, a20_loaded
@@ -246,7 +247,7 @@
     55 000004DE 803E[4705]01        <1>     cmp byte [a20_status], 1
     56 000004E3 7403                <1>     je .a20_exit
     57                              <1> 
-    58 000004E5 E9F83B              <1>     jmp halt
+    58 000004E5 E90D3C              <1>     jmp halt
     59                              <1> 
     60                              <1> .a20_exit:
     61 000004E8 5B                  <1>     pop bx
@@ -316,7 +317,7 @@
    124 00000547 00                  <1> a20_status: db 0
    125 00000548 613230206C6F616465- <1> a20_loaded db "a20 loaded", 0
    125 00000551 6400                <1>
-    17                                  %include "gdt.asm"
+    18                                  %include "gdt.asm"
      1                              <1> [bits 16]
      2                              <1> gdt_start:
      3 00000553 0000000000000000    <1>     dq 0x0
@@ -364,7 +365,7 @@
     45                              <1> 
     46                              <1> CODE_SEG64 equ gdt_code64 - gdt_start
     47                              <1> DATA_SEG64 equ gdt_data64 - gdt_start
-    18                                  %include "paging.asm"
+    19                                  %include "paging.asm"
      1                              <1> [bits 32]
      2 00000581 90<rep A7Fh>        <1> align 4096
      3                              <1> pml4_table:
@@ -1426,116 +1427,121 @@
     33 00004022 0FBAE81F            <1>     bts eax, 31
     34 00004026 0F22C0              <1>     mov cr0, eax
     35 00004029 C3                  <1>     ret
-    19                                  
-    20                                  [bits 16]
-    21                                  stage2_main:
-    22 0000402A E853C4                      call enable_a20
-    23 0000402D E8D9C0                      call e820_memory_map
-    24                                  
-    25 00004030 50                          push ax
-    26 00004031 53                          push bx
-    27 00004032 1E                          push ds
-    28 00004033 06                          push es
-    29 00004034 56                          push si
-    30 00004035 57                          push di
-    31                                  
-    32 00004036 31C0                        xor ax, ax
-    33 00004038 8ED8                        mov ds, ax
-    34 0000403A BE0005                      mov si, 0x0500
-    35                                  
-    36 0000403D B8FFFF                      mov ax, 0xffff
-    37 00004040 8EC0                        mov es, ax
-    38 00004042 BF1005                      mov di, 0x0510
-    39                                  
-    40 00004045 3EC60442                    mov byte [ds:si], 0x42
-    41 00004049 268A05                      mov al, [es:di]
-    42                                  
-    43 0000404C 3C42                        cmp al, 0x42
-    44 0000404E 7408                        je .a20_check_fail
-    45                                  
-    46 00004050 BE[3B41]                    mov si, a20_check_pass_msg
-    47 00004053 E855C0                      call print_string
-    48 00004056 EB06                        jmp .a20_check_done
-    49                                  
-    50                                      .a20_check_fail:
-    51 00004058 BE[4C41]                    mov si, a20_check_fail_msg
-    52 0000405B E84DC0                      call print_string
-    53                                  
-    54                                      .a20_check_done:
-    55 0000405E 5F                          pop di
-    56 0000405F 5E                          pop si
-    57 00004060 07                          pop es
-    58 00004061 1F                          pop ds
-    59 00004062 5B                          pop bx
-    60 00004063 58                          pop ax
-    61                                  
-    62 00004064 8A16[3A41]                  mov dl, [boot_drive]
-    63 00004068 C706[4800]0100              mov word [sector_count], 1
-    64 0000406E C706[4A00]00D0              mov word [my_offset], 0xD000
-    65 00004074 C706[4C00]0000              mov word [my_segment], 0x0
-    66 0000407A 66C706[4E00]220000-         mov dword [lba_low], 34
-    66 00004082 00                 
-    67 00004083 E88CBF                      call disk_load
-    68                                  
-    69 00004086 FA                          cli
-    70 00004087 0F0116[7B05]                lgdt [gdt_descriptor]
-    71                                  
-    72 0000408C 0F20C0                      mov eax, cr0
-    73 0000408F 6683C801                    or eax, 1
-    74 00004093 0F22C0                      mov cr0, eax
-    75 00004096 EA[9B40]0800                jmp CODE_SEG:protected_mode
-    76                                  
-    77                                  [bits 32]
-    78                                  protected_mode:
-    79 0000409B 66B81000                    mov ax, DATA_SEG
-    80 0000409F 8ED8                        mov ds, ax
-    81 000040A1 8EC0                        mov es, ax
-    82 000040A3 8ED0                        mov ss, ax
-    83                                  
-    84 000040A5 E856FFFFFF                  call enable_paging
-    85 000040AA 66B82000                    mov ax, DATA_SEG64
-    86 000040AE 8ED8                        mov ds, ax
-    87 000040B0 8EC0                        mov es, ax
-    88 000040B2 8ED0                        mov ss, ax
-    89 000040B4 8EE0                        mov fs, ax
-    90 000040B6 8EE8                        mov gs, ax
-    91 000040B8 EA[BF400000]1800            jmp CODE_SEG64:long_mode
-    92                                  
-    93                                  [bits 64]
-    94                                  long_mode:
-    95 000040BF B800008000                  mov rax, 0x800000
-    96 000040C4 4889C4                      mov rsp, rax
-    97 000040C7 4889C5                      mov rbp, rax
-    98                                  
-    99 000040CA 48BE-                       mov rsi, long_mode_msg
-    99 000040CC [2841000000000000] 
-   100 000040D4 E815C0FFFF                  call print_string_lm
-   101                                  
-   102 000040D9 E9(00D00000)                jmp 0xD000
-   103                                  
-   104 000040DE EB00                        jmp halt
-   105                                  
-   106                                  halt:
-   107                                      ;mov si, stage2_exit_msg
-   108                                      ;call print_string
-   109 000040E0 EBFE                        jmp $
+    20                                  
+    21                                  [bits 16]
+    22                                  stage2_main:
+    23 0000402A E853C4                      call enable_a20
+    24 0000402D E8D9C0                      call e820_memory_map
+    25                                  
+    26 00004030 50                          push ax
+    27 00004031 53                          push bx
+    28 00004032 1E                          push ds
+    29 00004033 06                          push es
+    30 00004034 56                          push si
+    31 00004035 57                          push di
+    32                                  
+    33 00004036 31C0                        xor ax, ax
+    34 00004038 8ED8                        mov ds, ax
+    35 0000403A BE0005                      mov si, 0x0500
+    36                                  
+    37 0000403D B8FFFF                      mov ax, 0xffff
+    38 00004040 8EC0                        mov es, ax
+    39 00004042 BF1005                      mov di, 0x0510
+    40                                  
+    41 00004045 3EC60442                    mov byte [ds:si], 0x42
+    42 00004049 268A05                      mov al, [es:di]
+    43                                  
+    44 0000404C 3C42                        cmp al, 0x42
+    45 0000404E 7408                        je .a20_check_fail
+    46                                  
+    47 00004050 BE[5041]                    mov si, a20_check_pass_msg
+    48 00004053 E855C0                      call print_string
+    49 00004056 EB06                        jmp .a20_check_done
+    50                                  
+    51                                      .a20_check_fail:
+    52 00004058 BE[6141]                    mov si, a20_check_fail_msg
+    53 0000405B E84DC0                      call print_string
+    54                                  
+    55                                      .a20_check_done:
+    56 0000405E 5F                          pop di
+    57 0000405F 5E                          pop si
+    58 00004060 07                          pop es
+    59 00004061 1F                          pop ds
+    60 00004062 5B                          pop bx
+    61 00004063 58                          pop ax
+    62                                  
+    63 00004064 8A16[4F41]                  mov dl, [boot_drive]
+    64 00004068 C706[4800]0100              mov word [sector_count], 1
+    65 0000406E C706[4A00]00D0              mov word [my_offset], 0xD000
+    66 00004074 C706[4C00]0000              mov word [my_segment], 0x0
+    67 0000407A 66C706[4E00]220000-         mov dword [lba_low], 34
+    67 00004082 00                 
+    68 00004083 E88CBF                      call disk_load
+    69                                  
+    70 00004086 FA                          cli
+    71 00004087 0F0116[7B05]                lgdt [gdt_descriptor]
+    72                                  
+    73 0000408C 0F20C0                      mov eax, cr0
+    74 0000408F 6683C801                    or eax, 1
+    75 00004093 0F22C0                      mov cr0, eax
+    76 00004096 EA[9B40]0800                jmp CODE_SEG:protected_mode
+    77                                  
+    78                                  [bits 32]
+    79                                  protected_mode:
+    80 0000409B 66B81000                    mov ax, DATA_SEG
+    81 0000409F 8ED8                        mov ds, ax
+    82 000040A1 8EC0                        mov es, ax
+    83 000040A3 8ED0                        mov ss, ax
+    84                                  
+    85 000040A5 E856FFFFFF                  call enable_paging
+    86 000040AA 66B82000                    mov ax, DATA_SEG64
+    87 000040AE 8ED8                        mov ds, ax
+    88 000040B0 8EC0                        mov es, ax
+    89 000040B2 8ED0                        mov ss, ax
+    90 000040B4 8EE0                        mov fs, ax
+    91 000040B6 8EE8                        mov gs, ax
+    92 000040B8 EA[BF400000]1800            jmp CODE_SEG64:long_mode
+    93                                  
+    94                                  [bits 64]
+    95                                  long_mode:
+    96 000040BF B800008000                  mov rax, 0x800000
+    97 000040C4 4889C4                      mov rsp, rax
+    98 000040C7 4889C5                      mov rbp, rax
+    99                                  
+   100 000040CA 48BE-                       mov rsi, long_mode_msg
+   100 000040CC [3D41000000000000] 
+   101 000040D4 E815C0FFFF                  call print_string_lm
+   102                                  
+   103 000040D9 48BF-                       mov rdi, e820_buffer
+   103 000040DB [8001000000000000] 
+   104 000040E3 4831F6                      xor rsi, rsi
+   105 000040E6 408A3425[63010000]          mov sil, [entry_count]
+   106                                  
+   107 000040EE E9(00D00000)                jmp 0xD000
+   108                                  
+   109 000040F3 EB00                        jmp halt
    110                                  
-   111 000040E2 6C6F6164696E672073-     stage2_loading db "loading stage 2...", 0
-   111 000040EB 7461676520322E2E2E-
-   111 000040F4 00                 
-   112 000040F5 737461676520322072-     stage2_begin_msg db "stage 2 ready", 0
-   112 000040FE 6561647900         
-   113 00004103 737461676520322065-     stage2_exit_msg db "stage 2 exit,", 0
-   113 0000410C 7869742C00         
-   114 00004111 50726F746563746564-     protected_mode_msg db "Protected mode enabled", 0
-   114 0000411A 206D6F646520656E61-
-   114 00004123 626C656400         
-   115 00004128 4C6F6E67206D6F6465-     long_mode_msg db "Long mode enabled", 0
-   115 00004131 20656E61626C656400 
-   116 0000413A 00                      boot_drive db 0
-   117                                  
-   118 0000413B 413230206C696E6520-     a20_check_pass_msg db "A20 line enabled", 0
-   118 00004144 656E61626C656400   
-   119 0000414C 413230206C696E6520-     a20_check_fail_msg db "A20 line not enabled", 0
-   119 00004155 6E6F7420656E61626C-
-   119 0000415E 656400             
+   111                                  halt:
+   112                                      ;mov si, stage2_exit_msg
+   113                                      ;call print_string
+   114 000040F5 EBFE                        jmp $
+   115                                  
+   116 000040F7 6C6F6164696E672073-     stage2_loading db "loading stage 2...", 0
+   116 00004100 7461676520322E2E2E-
+   116 00004109 00                 
+   117 0000410A 737461676520322072-     stage2_begin_msg db "stage 2 ready", 0
+   117 00004113 6561647900         
+   118 00004118 737461676520322065-     stage2_exit_msg db "stage 2 exit,", 0
+   118 00004121 7869742C00         
+   119 00004126 50726F746563746564-     protected_mode_msg db "Protected mode enabled", 0
+   119 0000412F 206D6F646520656E61-
+   119 00004138 626C656400         
+   120 0000413D 4C6F6E67206D6F6465-     long_mode_msg db "Long mode enabled", 0
+   120 00004146 20656E61626C656400 
+   121 0000414F 00                      boot_drive db 0
+   122                                  
+   123 00004150 413230206C696E6520-     a20_check_pass_msg db "A20 line enabled", 0
+   123 00004159 656E61626C656400   
+   124 00004161 413230206C696E6520-     a20_check_fail_msg db "A20 line not enabled", 0
+   124 0000416A 6E6F7420656E61626C-
+   124 00004173 656400             

@@ -1,6 +1,6 @@
 & NASM -f bin mbr.asm -o mbr.bin
 & NASM -f bin stage2.asm -o stage2.bin -l stage2.lst
-& NASM -f bin kernel_placeholder.asm -o kernel.bin
+& NASM -f bin kernel-entry.asm -o kernel.bin
 
 Remove-Item disk.img -ErrorAction SilentlyContinue
 Remove-Item disk.vdi -ErrorAction SilentlyContinue

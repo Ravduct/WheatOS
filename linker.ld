@@ -1,7 +1,7 @@
-ENTRY(entry_point_symbol)
+ENTRY(_start)
 
 SECTIONS {
-    . = 0xD000
+    . = 0xD000;
 
     .text : {
         *(.text)
@@ -10,6 +10,8 @@ SECTIONS {
         *(.data)
     }
     .bss : {
+        _bss_start = .;
         *(.bss)
+        _bss_end = .;
     }
 }

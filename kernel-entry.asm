@@ -1,15 +1,33 @@
 [bits 64]
-[org 0xD000]
+;[org 0xD000]
 
-times 512 db 0x90
+global _start
 
-mov al, dil
-add al, '0'
+extern _bss_start
+extern _bss_end
+extern kernel_main
 
-mov rbx, 0xB8000
-mov byte [rbx], 'K'
-mov byte [rbx+1], 0x0F
+_start:
+    ;times 512 db 0x90
 
-mov byte [rbx+2], al
-mov byte [rbx+3], 0x0F
-jmp $
+    mov al, dil
+    add al, '0'
+
+    mov rbx, 0xB8000
+    mov byte [rbx], 'K'
+    mov byte [rbx+1], 0x0F
+
+    mov byte [rbx+2], al
+    mov byte [rbx+3], 0x0F
+
+    mov rax, _bss_start
+    .loop:
+        cmp rax, _bss_end
+        je .done
+        mov byte [rax], 0x0
+        inc rax
+        jmp .loop
+
+    .done:
+        call kernel_main
+        jmp $

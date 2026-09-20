@@ -61,7 +61,7 @@ stage2_main:
     pop ax
 
     mov dl, [boot_drive]
-    mov word [sector_count], 1
+    mov word [sector_count], 4
     mov word [my_offset], 0xD000
     mov word [my_segment], 0x0
     mov dword [lba_low], 34

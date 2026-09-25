@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#define page_size 0x200000;
 
 uint8_t x = 0;
 uint8_t y = 0;
@@ -76,25 +77,15 @@ void kernel_main(void *e820_map, int entry_count) {
     
     struct e820_entry *entries = (struct e820_entry *)e820_map;
 
+    uint64_t highest_address = 0;
     for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].base_address));
-        print(", ");
+        uint64_t end_address = entries[i].base_address + entries[i].length;
+        if (end_address > highest_address) {
+            highest_address = end_address;
+        }
     }
-    new_line();
-    for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].length));
-        print(", ");
-    }
-    new_line();
-    for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].type));
-        print(", ");
-    }
-    new_line();
-    for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].extended_attribute));
-        print(", ");
-    }
+    uint32_t total_pages = highest_address / page_size;
+    
 
     while (1) {}
 }

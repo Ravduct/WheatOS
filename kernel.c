@@ -71,12 +71,36 @@ struct e820_entry {
     uint32_t extended_attribute;
 } __attribute__((packed));
 
+void set_bit(uint8_t *bitmap, uint32_t page_number) {
+    
+}
+
 void kernel_main(void *e820_map, int entry_count) {
     clear_screen();
     print("hello world\n\n");
     
     struct e820_entry *entries = (struct e820_entry *)e820_map;
 
+    for (int i = 0; i < entry_count; i++) {
+        print(int_to_str(entries[i].base_address));
+        print(" ");
+    }
+
+    new_line();
+
+    for (int i = 0; i < entry_count; i++) {
+        print(int_to_str(entries[i].length));
+        print(" ");
+    }
+
+    new_line();
+
+    for (int i = 0; i < entry_count; i++) {
+        print(int_to_str(entries[i].type));
+        print(" ");
+    }
+
+    //find the memory map information
     uint64_t highest_address = 0;
     for (int i = 0; i < entry_count; i++) {
         uint64_t end_address = entries[i].base_address + entries[i].length;
@@ -85,6 +109,30 @@ void kernel_main(void *e820_map, int entry_count) {
         }
     }
     uint32_t total_pages = highest_address / page_size;
+
+    //go through the bitmap
+    uint8_t bitmap[1024];
+    uint32_t needed_bytes = (total_pages + 7) / 8;
+
+    for (int i = 0; i < total_pages; i++) {
+        uint32_t page_address = i * page_size;
+        bool found = false;
+
+        for (int j = 0; j < entry_count; j++) {
+            if ((entries[j].base_address + entries[j].length) > page_address && page_address >= entries[j].base_address) {
+                if (entries->type == 1) {
+                    clear_bit(bitmap, i);
+                } else {
+                    set_bit(bitmap, i);
+                }
+
+                found = true;
+            }
+        }
+        if (!found) {
+            set_bit(bitmap, i);
+        }
+    }
     
 
     while (1) {}

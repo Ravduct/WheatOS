@@ -72,7 +72,19 @@ struct e820_entry {
 } __attribute__((packed));
 
 void set_bit(uint8_t *bitmap, uint32_t page_number) {
-    
+    uint32_t byte_index = page_number / 8;
+    uint16_t bit_position = page_number % 8;
+    uint8_t mask = 1 << bit_position;
+
+    bitmap[byte_index] = bitmap[byte_index] | mask;
+}
+
+void clear_bit(uint8_t *bitmap, uint32_t page_number) {
+    uint32_t byte_index = page_number / 8;
+    uint16_t bit_position = page_number % 8;
+    uint16_t mask = 1 << bit_position;
+
+    bitmap[byte_index] = bitmap[byte_index] & ~mask;
 }
 
 void kernel_main(void *e820_map, int entry_count) {
@@ -120,7 +132,7 @@ void kernel_main(void *e820_map, int entry_count) {
 
         for (int j = 0; j < entry_count; j++) {
             if ((entries[j].base_address + entries[j].length) > page_address && page_address >= entries[j].base_address) {
-                if (entries->type == 1) {
+                if (entries[j].type == 1) {
                     clear_bit(bitmap, i);
                 } else {
                     set_bit(bitmap, i);

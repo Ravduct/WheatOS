@@ -7,6 +7,8 @@ uint8_t y = 0;
 char buffer[21];
 uint8_t bitmap[1024];
 
+extern void load_gdt(void *ptr);
+
 char *int_to_str(uint64_t number) {
     if (number == 0) {
         buffer[0] = '0';
@@ -93,13 +95,50 @@ struct lgdt gdt_ptr;
 
 void set_gdt_entry(int index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
     gdt[index].base_low = base;
-    gdt[index].base_middle = base >> 16;
+    gdt[index].base_middle = (base >> 16) & 0xFF;
     gdt[index].base_high = base >> 24;
 
     gdt[index].limit_low = limit;
     gdt[index].access_byte = access;
 
     gdt[index].granularity = (flags & 0xF0) | ((limit >> 16) & 0x0F);
+}
+
+struct idt_entry {
+    uint16_t offset_low;
+    uint16_t selector;
+    uint8_t ist;
+    uint8_t type_attr;
+    uint16_t offset_middle;
+    uint32_t offset_high;
+    uint32_t zero;
+} __attribute__((packed));
+
+struct idtr {
+    uint16_t size;
+    uint64_t address;
+} __attribute__((packed));
+
+struct idt_entry idt[256];
+struct idtr idt_ptr;
+
+void set_idt_entry(int index, uint64_t offset, uint16_t selector, uint8_t type_attr, uint8_t ist) {
+    idt[index].offset_low = offset & 0xFFFF;
+    idt[index].selector = selector;
+    idt[index].ist = ist & 0x07;
+    idt[index].type_attr = type_attr;
+    idt[index].offset_middle = (offset >> 16) & 0xFFFF;
+    idt[index].offset_high = (offset >> 32) & 0xFFFFFFFF;
+    idt[index].zero = 0;
+}
+
+extern void load_idt(void *ptr);
+extern void default_exception_handler(void);
+void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
+    print("Exception occurred!\n");
+    while (1) {
+        __asm__ volatile ("cli; hlt");
+    }
 }
 
 void set_bit(uint8_t *bitmap, uint32_t page_number) {
@@ -252,12 +291,20 @@ void kernel_main(void *e820_map, int entry_count) {
     gdt_ptr.size = (sizeof(struct gdt_entry) * 3) - 1;
     gdt_ptr.address = (uint64_t)(uintptr_t)&gdt;
 
-    __asm__ volatile (".intel_syntax noprefix\n\t"
-        "lgdt %0\n\t"
-        ".att_syntax\n\t"
-        :
-        : "m"(gdt_ptr)
-    );
+    load_gdt(&gdt_ptr);
+
+    // Set up IDT
+    idt_ptr.size = (sizeof(struct idt_entry) * 256) - 1;
+    idt_ptr.address = (uint64_t)(uintptr_t)&idt;
+
+    for (int i = 0; i < 256; i++) {
+        set_idt_entry(i, (uint64_t)(uintptr_t)default_exception_handler, 0x08, 0x8E, 0);
+    }
+
+    load_idt(&idt_ptr);
+
+    new_line();
+    print("Kernel initialized successfully!\n");
 
     while (1) {}
 }

@@ -2,11 +2,12 @@ mkdir -p build
 
 nasm -f bin mbr.asm -o build/mbr.bin
 nasm -f bin stage2.asm -o build/stage2.bin -l build/stage2.lst
+nasm -f elf64 kernel_gdt.asm -o build/kernel_gdt.o
 truncate -s 16896 build/stage2.bin
 
 nasm -f elf64 kernel-entry.asm -o build/kernel-entry.o
 gcc -ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -c kernel.c -o build/kernel.o
-ld -T linker.ld build/kernel-entry.o build/kernel.o -o build/kernel.elf
+ld -T linker.ld build/kernel-entry.o build/kernel.o build/kernel_gdt.o -o build/kernel.elf
 objcopy -O binary build/kernel.elf build/kernel.bin
 
 rm -f build/disk.img

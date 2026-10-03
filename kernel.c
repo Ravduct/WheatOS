@@ -8,6 +8,7 @@ char buffer[21];
 uint8_t bitmap[1024];
 
 extern void load_gdt(void *ptr);
+extern uint64_t isr_table[32];
 
 char *int_to_str(uint64_t number) {
     if (number == 0) {
@@ -146,8 +147,6 @@ void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
         __asm__ volatile ("cli; hlt");
     }
 }
-
-global(exception_handler_c);
 
 void set_bit(uint8_t *bitmap, uint32_t page_number) {
     uint32_t byte_index = page_number / 8;
@@ -305,9 +304,15 @@ void kernel_main(void *e820_map, int entry_count) {
     idt_ptr.size = (sizeof(struct idt_entry) * 256) - 1;
     idt_ptr.address = (uint64_t)(uintptr_t)&idt;
 
+
     for (int i = 0; i < 256; i++) {
-        set_idt_entry(i, (uint64_t)(uintptr_t)default_exception_handler, 0x08, 0x8E, 0);
+        if (i < 32) {
+            set_idt_entry(i, isr_table[i], 0x08, 0x8E, 0);
+        } else {
+            set_idt_entry(i, (uint64_t)(uintptr_t)default_exception_handler, 0x08, 0x8E, 0);
+        }
     }
+
 
     load_idt(&idt_ptr);
 
@@ -315,8 +320,7 @@ void kernel_main(void *e820_map, int entry_count) {
     print("Kernel initialized successfully!\n");
     print("Triggering intentional divide-by-zero test...\n");
 
-    volatile int volatile_zero = 0;
-    volatile int crash_test = 5 / volatile_zero;
+    //__asm__ volatile ("ud2");
 
     while (1) {}
 }

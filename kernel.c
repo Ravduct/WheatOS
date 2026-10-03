@@ -135,11 +135,19 @@ void set_idt_entry(int index, uint64_t offset, uint16_t selector, uint8_t type_a
 extern void load_idt(void *ptr);
 extern void default_exception_handler(void);
 void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
-    print("Exception occurred!\n");
+    clear_screen();
+    print("--- WHEAT KERNEL PANIC ---\n");
+    print("Exception Vector: ");
+    print(int_to_str(vector_number)); new_line();
+    print("Error Code: ");
+    print(int_to_str(error_code)); new_line();
+    print("System Halted.");
     while (1) {
         __asm__ volatile ("cli; hlt");
     }
 }
+
+global(exception_handler_c);
 
 void set_bit(uint8_t *bitmap, uint32_t page_number) {
     uint32_t byte_index = page_number / 8;
@@ -305,6 +313,10 @@ void kernel_main(void *e820_map, int entry_count) {
 
     new_line();
     print("Kernel initialized successfully!\n");
+    print("Triggering intentional divide-by-zero test...\n");
+
+    volatile int volatile_zero = 0;
+    volatile int crash_test = 5 / volatile_zero;
 
     while (1) {}
 }

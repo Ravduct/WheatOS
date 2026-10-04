@@ -1,9 +1,11 @@
 [bits 64]
 global load_gdt
 global load_idt
+global irq1
 
 extern exception_handler_c
 global default_exception_handler
+extern keyboard_handler
 
 load_gdt:
     ; Load the GDT
@@ -28,6 +30,49 @@ load_idt:
     ; Load the IDT
     lidt [rdi]
     ret
+
+irq1:
+    push 33
+    jmp irq_common
+
+irq_common:
+    push rax
+    push rbx
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push rbp
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
+
+    mov rdi, [rsp + 120]
+    call keyboard_handler
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rbp
+    pop rdi
+    pop rsi
+    pop rdx
+    pop rcx
+    pop rbx
+    pop rax
+
+    add rsp, 8
+    iretq
 
 default_exception_handler:
     push rax

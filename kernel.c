@@ -191,6 +191,52 @@ void free_page(void *ptr) {
     }
 }
 
+static inline uint8_t inb(uint16_t port) {
+    uint8_t ret;
+    __asm__ volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+static inline void outb(uint16_t port, uint8_t value) {
+    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+static inline void io_wait() {
+    outb(0x80, 0);
+}
+void pic_remap() {
+    outb(0x20, 0x11);
+    outb(0xA0, 0x11);
+
+    outb(0x21, 0x20);
+    outb(0xA1, 0x28);
+
+    outb(0x21, 0x04);
+    outb(0xA1, 0x02);
+
+    outb(0x21, 0x01);
+    outb(0xA1, 0x01);
+
+    outb(0x21, 0xFD);
+    outb(0xA1, 0xFF);
+}
+
+void keyboard_handler(uint64_t vector) {
+    uint8_t scancode = inb(0x60);
+    if (scancode & 0x80) {
+        // Key release event
+        uint8_t keycode = scancode & 0x7F;
+        print("Key released: ");
+        print(int_to_str(keycode));
+        new_line();
+    } else {
+        // Key press event
+        print("Key pressed: ");
+        print(int_to_str(scancode));
+        new_line();
+    }
+    outb(0x20, 0x20); // Send End of Interrupt (EOI) signal to PIC
+}
+extern void irq1(void);
+
 void kernel_main(void *e820_map, int entry_count) {
     clear_screen();
     print("hello world\n\n");
@@ -312,9 +358,13 @@ void kernel_main(void *e820_map, int entry_count) {
             set_idt_entry(i, (uint64_t)(uintptr_t)default_exception_handler, 0x08, 0x8E, 0);
         }
     }
-
+    set_idt_entry(33, (uint64_t)(uintptr_t)irq1, 0x08, 0x8E, 0);
 
     load_idt(&idt_ptr);
+
+    pic_remap();
+
+    __asm__ volatile ("sti");
 
     new_line();
     print("Kernel initialized successfully!\n");

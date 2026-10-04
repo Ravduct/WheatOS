@@ -10,6 +10,15 @@ uint8_t bitmap[1024];
 extern void load_gdt(void *ptr);
 extern uint64_t isr_table[32];
 
+static inline uint8_t inb(uint16_t port) {
+    uint8_t ret;
+    __asm__ volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+static inline void outb(uint16_t port, uint8_t value) {
+    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+
 char *int_to_str(uint64_t number) {
     if (number == 0) {
         buffer[0] = '0';
@@ -35,20 +44,42 @@ char *int_to_str(uint64_t number) {
     }
     return buffer;
 }
+void update_hardware_cursor(uint8_t x, uint8_t y) {
+    uint16_t position = (y * 80) + x;
 
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (uint8_t)(position >> 8) & 0xFF);
+
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (uint8_t)(position & 0xFF));
+}
 void write_character(unsigned char c, unsigned char forecolor, unsigned char backcolor) {
     if(c == '\n' || x >= 80) {
         x = 0;
         y += 1;
-        if (c == '\n') {
-            return;
+        update_hardware_cursor(x, y);
+        return;
+    }
+    if(c == '\b') {
+        if (x == 0 && y > 0) {
+            y -= 1;
+            x = 79;
+        } else {
+            x -= 1;
         }
+        uint16_t attrib = (backcolor << 4) | (forecolor & 0x0F);
+        volatile uint16_t * where;
+        where = (volatile uint16_t *)0xB8000 + (y * 80 + x);
+        *where = ' ' | (attrib << 8);
+        update_hardware_cursor(x, y);
+        return;
     }
     uint16_t attrib = (backcolor << 4) | (forecolor & 0x0F);
     volatile uint16_t * where;
     where = (volatile uint16_t *)0xB8000 + (y * 80 + x);
     *where = c | (attrib << 8);
     x += 1;
+    update_hardware_cursor(x, y);
 }
 
 void print(const char *string) {
@@ -190,15 +221,6 @@ void free_page(void *ptr) {
         clear_bit(bitmap, address/page_size);
     }
 }
-
-static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-static inline void outb(uint16_t port, uint8_t value) {
-    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
-}
 static inline void io_wait() {
     outb(0x80, 0);
 }
@@ -218,20 +240,51 @@ void pic_remap() {
     outb(0x21, 0xFD);
     outb(0xA1, 0xFF);
 }
+static bool shift_pressed = false;
+static const char keymap_lowercase[] = {
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+    '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
+    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', 0,
+    '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, '*', 0, ' '
+};
+static const char keymap_uppercase[] = {
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
+    '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
+    0,  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', 0,
+    '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, '*', 0, ' '
+};
+char keyboard_to_ascii(uint8_t scancode) {
+    switch (scancode) {
+        case 0x2A:
+        case 0x36:
+            shift_pressed = true;
+            return 0;
+        
+        case 0xAA:
+        case 0xB6:
+            shift_pressed = false;
+            return 0;
+    }
+
+    if (scancode & 0x80) {
+        return 0;
+    }
+
+    if (scancode >= sizeof(keymap_lowercase)) {
+        return 0;
+    }
+
+    char ascii = shift_pressed ? keymap_uppercase[scancode] : keymap_lowercase[scancode];
+    return ascii;
+}
 
 void keyboard_handler(uint64_t vector) {
     uint8_t scancode = inb(0x60);
-    if (scancode & 0x80) {
-        // Key release event
-        uint8_t keycode = scancode & 0x7F;
-        print("Key released: ");
-        print(int_to_str(keycode));
-        new_line();
-    } else {
-        // Key press event
-        print("Key pressed: ");
-        print(int_to_str(scancode));
-        new_line();
+
+    char c = keyboard_to_ascii(scancode);
+    if (c != 0) {
+        char str[2] = {c, '\0'};
+        print(str);
     }
     outb(0x20, 0x20); // Send End of Interrupt (EOI) signal to PIC
 }

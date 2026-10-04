@@ -1,10 +1,7 @@
 #include <inttypes.h>
 #include <stddef.h>
+#include <print.h>
 #define page_size 0x200000ULL
-
-uint8_t x = 0;
-uint8_t y = 0;
-char buffer[21];
 uint8_t bitmap[1024];
 
 extern void load_gdt(void *ptr);
@@ -19,86 +16,6 @@ static inline void outb(uint16_t port, uint8_t value) {
     __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
-char *int_to_str(uint64_t number) {
-    if (number == 0) {
-        buffer[0] = '0';
-        buffer[1] = '\0';
-    }
-    //find length
-    uint64_t floor_num = 10;
-    int i = 1;
-    while(number / floor_num != 0) {
-        i += 1;
-        floor_num *= 10;
-    }
-    int length = i+1;
-
-    floor_num = 1;
-    uint64_t mod_num = 10;
-    buffer[length - 1] = '\0';
-    //find hex value
-    for (int i = length-2; i >= 0; i--) {
-        buffer[i] = (char)(number % mod_num / floor_num) + 48;
-        floor_num *= 10;
-        mod_num *= 10;
-    }
-    return buffer;
-}
-void update_hardware_cursor(uint8_t x, uint8_t y) {
-    uint16_t position = (y * 80) + x;
-
-    outb(0x3D4, 0x0E);
-    outb(0x3D5, (uint8_t)(position >> 8) & 0xFF);
-
-    outb(0x3D4, 0x0F);
-    outb(0x3D5, (uint8_t)(position & 0xFF));
-}
-void write_character(unsigned char c, unsigned char forecolor, unsigned char backcolor) {
-    if(c == '\n' || x >= 80) {
-        x = 0;
-        y += 1;
-        update_hardware_cursor(x, y);
-        return;
-    }
-    if(c == '\b') {
-        if (x == 0 && y > 0) {
-            y -= 1;
-            x = 79;
-        } else {
-            x -= 1;
-        }
-        uint16_t attrib = (backcolor << 4) | (forecolor & 0x0F);
-        volatile uint16_t * where;
-        where = (volatile uint16_t *)0xB8000 + (y * 80 + x);
-        *where = ' ' | (attrib << 8);
-        update_hardware_cursor(x, y);
-        return;
-    }
-    uint16_t attrib = (backcolor << 4) | (forecolor & 0x0F);
-    volatile uint16_t * where;
-    where = (volatile uint16_t *)0xB8000 + (y * 80 + x);
-    *where = c | (attrib << 8);
-    x += 1;
-    update_hardware_cursor(x, y);
-}
-
-void print(const char *string) {
-    while (*string) {
-        write_character(*string, 7, 0);
-        string++;
-    }
-}
-
-void clear_screen() {
-    x = y = 0;
-    for(int i = 0; i < (80*25); i++){
-        write_character(' ', 7, 0);
-    }
-    x = y = 0;
-}
-void new_line() {
-    write_character('\n', 7, 0);
-}
 
 struct e820_entry {
     uint64_t base_address;
@@ -176,49 +93,6 @@ void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
     print("System Halted.");
     while (1) {
         __asm__ volatile ("cli; hlt");
-    }
-}
-
-void set_bit(uint8_t *bitmap, uint32_t page_number) {
-    uint32_t byte_index = page_number / 8;
-    uint16_t bit_position = page_number % 8;
-    uint8_t mask = 1 << bit_position;
-
-    bitmap[byte_index] = bitmap[byte_index] | mask;
-}
-
-void clear_bit(uint8_t *bitmap, uint32_t page_number) {
-    uint32_t byte_index = page_number / 8;
-    uint16_t bit_position = page_number % 8;
-    uint16_t mask = 1 << bit_position;
-
-    bitmap[byte_index] &= ~mask;
-}
-
-uint8_t test_bit(uint8_t *bitmap, uint32_t page_number) {
-    uint32_t byte_index = page_number / 8;
-    uint16_t bit_position = page_number % 8;
-    uint16_t mask = 1 << bit_position;
-
-    return bitmap[byte_index] & mask;
-}
-
-void *alloc_page(uint32_t total_page) {
-    for (int i = 0; i < total_page; i++) {
-        if (test_bit(bitmap, i) == 0) {
-            set_bit(bitmap, i);
-            uint64_t address = (uint64_t)i * page_size;
-            return (void *)(uintptr_t)address;
-        }
-    }
-    return NULL;
-}
-
-void free_page(void *ptr) {
-    uint64_t address = (uint64_t)(uintptr_t)ptr;
-
-    if (address % page_size == 0 && test_bit(bitmap, address/page_size) != 0) {
-        clear_bit(bitmap, address/page_size);
     }
 }
 static inline void io_wait() {
@@ -422,6 +296,8 @@ void kernel_main(void *e820_map, int entry_count) {
     new_line();
     print("Kernel initialized successfully!\n");
     print("Triggering intentional divide-by-zero test...\n");
+    new_line();
+    print("hello world");
 
     //__asm__ volatile ("ud2");
 

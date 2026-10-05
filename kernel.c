@@ -1,21 +1,16 @@
 #include <inttypes.h>
 #include <stddef.h>
-#include <print.h>
+
+#include "libraries/print.h"
+#include "libraries/bitmap.h"
+#include "libraries/pic.h"
+#include "libraries/gdt_idt.h"
+#include "libraries/keyboard.h"
+
 #define page_size 0x200000ULL
 uint8_t bitmap[1024];
 
-extern void load_gdt(void *ptr);
 extern uint64_t isr_table[32];
-
-static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-static inline void outb(uint16_t port, uint8_t value) {
-    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
-}
-
 
 struct e820_entry {
     uint64_t base_address;
@@ -42,17 +37,6 @@ struct lgdt {
 
 struct lgdt gdt_ptr;
 
-void set_gdt_entry(int index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
-    gdt[index].base_low = base;
-    gdt[index].base_middle = (base >> 16) & 0xFF;
-    gdt[index].base_high = base >> 24;
-
-    gdt[index].limit_low = limit;
-    gdt[index].access_byte = access;
-
-    gdt[index].granularity = (flags & 0xF0) | ((limit >> 16) & 0x0F);
-}
-
 struct idt_entry {
     uint16_t offset_low;
     uint16_t selector;
@@ -71,17 +55,6 @@ struct idtr {
 struct idt_entry idt[256];
 struct idtr idt_ptr;
 
-void set_idt_entry(int index, uint64_t offset, uint16_t selector, uint8_t type_attr, uint8_t ist) {
-    idt[index].offset_low = offset & 0xFFFF;
-    idt[index].selector = selector;
-    idt[index].ist = ist & 0x07;
-    idt[index].type_attr = type_attr;
-    idt[index].offset_middle = (offset >> 16) & 0xFFFF;
-    idt[index].offset_high = (offset >> 32) & 0xFFFFFFFF;
-    idt[index].zero = 0;
-}
-
-extern void load_idt(void *ptr);
 extern void default_exception_handler(void);
 void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
     clear_screen();
@@ -95,74 +68,10 @@ void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
         __asm__ volatile ("cli; hlt");
     }
 }
-static inline void io_wait() {
-    outb(0x80, 0);
-}
-void pic_remap() {
-    outb(0x20, 0x11);
-    outb(0xA0, 0x11);
 
-    outb(0x21, 0x20);
-    outb(0xA1, 0x28);
-
-    outb(0x21, 0x04);
-    outb(0xA1, 0x02);
-
-    outb(0x21, 0x01);
-    outb(0xA1, 0x01);
-
-    outb(0x21, 0xFD);
-    outb(0xA1, 0xFF);
-}
-static bool shift_pressed = false;
-static const char keymap_lowercase[] = {
-    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
-    '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
-    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', 0,
-    '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, '*', 0, ' '
-};
-static const char keymap_uppercase[] = {
-    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
-    '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
-    0,  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', 0,
-    '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, '*', 0, ' '
-};
-char keyboard_to_ascii(uint8_t scancode) {
-    switch (scancode) {
-        case 0x2A:
-        case 0x36:
-            shift_pressed = true;
-            return 0;
-        
-        case 0xAA:
-        case 0xB6:
-            shift_pressed = false;
-            return 0;
-    }
-
-    if (scancode & 0x80) {
-        return 0;
-    }
-
-    if (scancode >= sizeof(keymap_lowercase)) {
-        return 0;
-    }
-
-    char ascii = shift_pressed ? keymap_uppercase[scancode] : keymap_lowercase[scancode];
-    return ascii;
-}
-
-void keyboard_handler(uint64_t vector) {
-    uint8_t scancode = inb(0x60);
-
-    char c = keyboard_to_ascii(scancode);
-    if (c != 0) {
-        char str[2] = {c, '\0'};
-        print(str);
-    }
-    outb(0x20, 0x20); // Send End of Interrupt (EOI) signal to PIC
-}
 extern void irq1(void);
+
+// Main kernel entry point
 
 void kernel_main(void *e820_map, int entry_count) {
     clear_screen();
@@ -188,7 +97,7 @@ void kernel_main(void *e820_map, int entry_count) {
         print(int_to_str(entries[i].type));
         print(" ");
     }
-
+    
     //find the memory map information
     uint64_t highest_address = 0;
     for (int i = 0; i < entry_count; i++) {
@@ -300,6 +209,5 @@ void kernel_main(void *e820_map, int entry_count) {
     print("hello world");
 
     //__asm__ volatile ("ud2");
-
     while (1) {}
 }

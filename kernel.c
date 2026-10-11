@@ -6,6 +6,7 @@
 #include "libraries/pic.h"
 #include "libraries/gdt_idt.h"
 #include "libraries/keyboard.h"
+#include "libraries/paging.h"
 
 #define page_size 0x200000ULL
 uint8_t bitmap[1024];
@@ -78,25 +79,6 @@ void kernel_main(void *e820_map, int entry_count) {
     print("hello world\n\n");
     
     struct e820_entry *entries = (struct e820_entry *)e820_map;
-
-    for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].base_address));
-        print(" ");
-    }
-
-    new_line();
-
-    for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].length));
-        print(" ");
-    }
-
-    new_line();
-
-    for (int i = 0; i < entry_count; i++) {
-        print(int_to_str(entries[i].type));
-        print(" ");
-    }
     
     //find the memory map information
     uint64_t highest_address = 0;
@@ -202,12 +184,14 @@ void kernel_main(void *e820_map, int entry_count) {
 
     __asm__ volatile ("sti");
 
+    void *p = alloc_page(total_pages);
+    if (map_page(0x40200000, (uint64_t)p, total_pages) == 0) {
+        *(volatile uint32_t *)0x40200000 = 1234;
+        print(int_to_str(*(volatile uint32_t *)p)); new_line();
+    }
+
     new_line();
     print("Kernel initialized successfully!\n");
-    print("Triggering intentional divide-by-zero test...\n");
-    new_line();
-    print("hello world");
 
-    //__asm__ volatile ("ud2");
     while (1) {}
 }

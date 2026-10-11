@@ -6,7 +6,11 @@
 
 uint8_t x = 0;
 uint8_t y = 0;
+char line[81];
+int line_len = 0;
 char buffer[21];
+uint16_t history[200][80];
+int history_count = 0;
 
 char *int_to_str(uint64_t number) {
     if (number == 0) {
@@ -42,19 +46,63 @@ void update_hardware_cursor(uint8_t x, uint8_t y) {
     outb(0x3D4, 0x0F);
     outb(0x3D5, (uint8_t)(position & 0xFF));
 }
+void scroll(_Bool status) {
+    volatile uint16_t *vga_buffer = (volatile uint16_t *)0xB8000;
+    if (status == 0) { //shift screen down
+        for (int i = ((80 * 25)-1); i >= 80; i--) {
+            vga_buffer[i] = vga_buffer[i - 80];
+        }
+        if (history_count > 0) {
+            history_count--;
+            for (int i = 0; i < 80; i++) {
+                vga_buffer[i] = history[history_count][i];
+            }
+        } else {
+            for (int i = 0; i < 80; i++) {
+                vga_buffer[i] = ' ' | (7 << 8);
+            }
+        }
+        x=0;
+        y=0;
+    }
+    if (status == 1) { //shift screen up
+        if (history_count < 200) {
+            for (int i = 0; i < 80; i++) {
+                history[history_count][i] = vga_buffer[i];
+            }
+            history_count++;
+        }
+        for (int i = 0; i < (80 * 24); i++) {
+            vga_buffer[i] = vga_buffer[i+80];
+        }
+        for (int i = 80 * 24; i < 80 * 25; i++) {
+            vga_buffer[i] = ' ' | (7 << 8);
+        }
+        y = 24;
+        x = 0;
+    }
+    update_hardware_cursor(x, y);
+}
 void write_character(unsigned char c, unsigned char forecolor, unsigned char backcolor) {
     uint16_t attrib = (backcolor << 4) | (forecolor & 0x0F);
     volatile uint16_t * where;
     if (c == '\n' || x >= 80) {
         x = 0;
         y += 1;
+        if (y >= 25) {
+            scroll(1);
+        }
         update_hardware_cursor(x, y);
         if (c == '\n') {
+            line_len = 0;
             return;
         }
     }
     if(c == '\b') {
-        if (x == 0 && y > 0) {
+        if (x == 0 && y == 0) {
+            return;
+        }
+        if (x == 0) {
             y -= 1;
             x = 79;
             volatile uint16_t *vga_buffer = (volatile uint16_t *)0xB8000;

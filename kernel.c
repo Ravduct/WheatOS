@@ -184,11 +184,7 @@ void kernel_main(void *e820_map, int entry_count) {
 
     __asm__ volatile ("sti");
 
-    void *p = alloc_page(total_pages);
-    if (map_page(0x40200000, (uint64_t)p, total_pages) == 0) {
-        *(volatile uint32_t *)0x40200000 = 1234;
-        print(int_to_str(*(volatile uint32_t *)p)); new_line();
-    }
+
 
     new_line();
     print("Kernel initialized successfully!\n");

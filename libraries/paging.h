@@ -39,8 +39,9 @@ uint64_t *next_table(uint64_t *table, uint64_t index, uint32_t total_pages) {
             new_table[i] = 0;
         }
         table[index] = (uint64_t)new_table | page_present | page_writable;
-    }
+    
     return (uint64_t *)(table[index] & ~0xFFFULL);
+    }
 }
 
 static inline void invlpg(uint64_t addr) {
@@ -62,4 +63,20 @@ int map_page(uint64_t virt, uint64_t phys, uint32_t total_pages) {
     return 0;
 }
 
+int unmap_page(uint64_t virt) {
+    if (virt & 0x1FFFFF) return -1;
+
+    uint64_t *pml4 = get_pml4();
+    if (!(pml4[pml4_index(virt)] & page_present)) return -1;
+
+    uint64_t *pdpt = (uint64_t *)(pml4[pml4_index(virt)] & ~0xFFFULL);
+    if (!(pdpt[pdpt_index(virt)] & page_present)) return -1;
+
+    uint64_t *pd = (uint64_t *)(pdpt[pdpt_index(virt)] & ~0xFFFULL);
+    if (!(pd[pd_index(virt)] & page_present)) return -1;
+
+    pd[pd_index(virt)] =  0;
+    invlpg(virt);
+    return 0;
+}
 #endif

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "print.h"
+#include "pic.h"
 
 static bool shift_pressed = false;
 static bool is_extended = false;
@@ -79,7 +80,6 @@ void keyboard_handler(uint64_t vector) {
 
     if (scancode == 0xE0) {
         is_extended = true;
-        outb(0x20, 0x20);
         return;
     }
 
@@ -109,6 +109,30 @@ void keyboard_handler(uint64_t vector) {
             print(str);
         }
     }
-    outb(0x20, 0x20); // Send End of Interrupt (EOI) signal to PIC
 }
+
+
+
+
+void irq_handler_c(uint64_t vector) {
+    switch (vector)
+    {
+    case 33:
+        keyboard_handler(vector);
+        break;
+    case 32:
+        timer_handler();
+        break;
+    default:
+        break;
+    }
+
+    if (vector >= 40) {
+        outb(0xA0, 0x20);
+    }
+
+    outb(0x20, 0x20);
+}
+
+
 #endif

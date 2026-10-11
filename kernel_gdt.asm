@@ -1,11 +1,12 @@
 [bits 64]
 global load_gdt
 global load_idt
+global irq0
 global irq1
 
 extern exception_handler_c
 global default_exception_handler
-extern keyboard_handler
+extern irq_handler_c
 
 load_gdt:
     ; Load the GDT
@@ -31,6 +32,10 @@ load_idt:
     lidt [rdi]
     ret
 
+irq0:
+    push 32
+    jmp irq_common
+
 irq1:
     push 33
     jmp irq_common
@@ -53,7 +58,7 @@ irq_common:
     push r15
 
     mov rdi, [rsp + 120]
-    call keyboard_handler
+    call irq_handler_c
 
     pop r15
     pop r14

@@ -7,6 +7,7 @@
 #include "libraries/gdt_idt.h"
 #include "libraries/keyboard.h"
 #include "libraries/paging.h"
+#include "libraries/time.h"
 
 #define page_size 0x200000ULL
 uint8_t bitmap[1024];
@@ -71,6 +72,7 @@ void exception_handler_c(uint64_t vector_number, uint64_t error_code) {
 }
 
 extern void irq1(void);
+extern void irq0(void);
 
 // Main kernel entry point
 
@@ -176,6 +178,8 @@ void kernel_main(void *e820_map, int entry_count) {
             set_idt_entry(i, (uint64_t)(uintptr_t)default_exception_handler, 0x08, 0x8E, 0);
         }
     }
+
+    set_idt_entry(32, (uint64_t)(uintptr_t)irq0, 0x08, 0x8E, 0);
     set_idt_entry(33, (uint64_t)(uintptr_t)irq1, 0x08, 0x8E, 0);
 
     load_idt(&idt_ptr);
@@ -189,5 +193,8 @@ void kernel_main(void *e820_map, int entry_count) {
     new_line();
     print("Kernel initialized successfully!\n");
 
-    while (1) {}
+    uint64_t last = 0;
+    while (1) {
+        // bla bla bla
+    }
 }

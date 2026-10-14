@@ -19,8 +19,12 @@ void set_pit() {
     outb(0x40, high_byte);
 }
 
-void sleeep(uint64_t time) {
-    
+void sleep(uint64_t ms) {
+    uint64_t start = ticks;
+    uint64_t wait_ticks = (ms/10 + 9) / 10;
+    while (ticks - start < wait_ticks) {
+        __asm__ volatile ("hlt");
+    }
 }
 
-#endif TIME_H
+#endif

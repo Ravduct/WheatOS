@@ -30,4 +30,4 @@ rm -f build/disk.vdi
 
 cat build/mbr.bin build/stage2.bin build/kernel.bin > build/disk.img
 
-qemu-system-x86_64 -drive format=raw,file=build/disk.img -m 4G -no-shutdown -d int -D build/qemu.log
+qemu-system-x86_64 -drive format=raw,file=build/disk.img -m 4G -no-shutdown -D build/qemu.log

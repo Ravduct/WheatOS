@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "print.h"
 #include "pic.h"
+#include "time.h"
 
 static bool shift_pressed = false;
 static bool is_extended = false;

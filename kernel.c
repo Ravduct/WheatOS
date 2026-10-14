@@ -195,6 +195,9 @@ void kernel_main(void *e820_map, int entry_count) {
 
     uint64_t last = 0;
     while (1) {
-        // bla bla bla
+        print("Ticks: ");
+        print(int_to_str(ticks));
+        print("\n");
+        sleep(1000);
     }
 }

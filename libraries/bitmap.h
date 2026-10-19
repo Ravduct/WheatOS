@@ -5,6 +5,7 @@
 #include <stddef.h>
 #define page_size 0x200000ULL
 uint8_t bitmap[1024];
+uint32_t total_pages;
 
 void set_bit(uint8_t *bitmap, uint32_t page_number) {
     uint32_t byte_index = page_number / 8;
@@ -30,8 +31,8 @@ uint8_t test_bit(uint8_t *bitmap, uint32_t page_number) {
     return bitmap[byte_index] & mask;
 }
 
-void *alloc_page(uint32_t total_page) {
-    for (int i = 0; i < total_page; i++) {
+void *alloc_page() {
+    for (int i = 0; i < total_pages; i++) {
         if (test_bit(bitmap, i) == 0) {
             set_bit(bitmap, i);
             uint64_t address = (uint64_t)i * page_size;

@@ -31,9 +31,9 @@ static inline uint64_t *get_pml4() {
     return (uint64_t *)(read_cr3() & ~0xFFFULL);
 }
 
-uint64_t *next_table(uint64_t *table, uint64_t index, uint32_t total_pages) {
+uint64_t *next_table(uint64_t *table, uint64_t index) {
     if (!(table[index] & page_present)) {
-        uint64_t *new_table = (uint64_t *)alloc_page(total_pages);
+        uint64_t *new_table = (uint64_t *)alloc_page();
         if (new_table == NULL) return NULL;
         for (int i = 0; i < 512; i++) {
             new_table[i] = 0;
@@ -48,14 +48,14 @@ static inline void invlpg(uint64_t addr) {
     __asm__ volatile ("invlpg (%0)" : : "r"(addr) : "memory");
 }
 
-int map_page(uint64_t virt, uint64_t phys, uint32_t total_pages) {
+int map_page(uint64_t virt, uint64_t phys) {
     if (virt & 0x1FFFFF || phys & 0x1FFFFF) return -1;
 
     uint64_t *pml4 = get_pml4();
-    uint64_t *pdpt = next_table(pml4, pml4_index(virt), total_pages);
+    uint64_t *pdpt = next_table(pml4, pml4_index(virt));
     if (pdpt == NULL) return -1;
 
-    uint64_t *pd = next_table(pdpt, pdpt_index(virt), total_pages);
+    uint64_t *pd = next_table(pdpt, pdpt_index(virt));
     if (pd == NULL) return -1;
 
     pd[pd_index(virt)] = phys | page_present | page_writable | page_huge;

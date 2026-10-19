@@ -8,10 +8,9 @@
 #include "libraries/keyboard.h"
 #include "libraries/paging.h"
 #include "libraries/time.h"
+#include "libraries/heap.h"
 
 #define page_size 0x200000ULL
-uint8_t bitmap[1024];
-
 extern uint64_t isr_table[32];
 
 struct e820_entry {
@@ -93,7 +92,7 @@ void kernel_main(void *e820_map, int entry_count) {
             highest_address = end_address;
         }
     }
-    uint32_t total_pages = highest_address / page_size;
+    total_pages = highest_address / page_size;
 
     //go through the bitmap
     uint32_t needed_bytes = (total_pages + 7) / 8;
@@ -189,13 +188,11 @@ void kernel_main(void *e820_map, int entry_count) {
     __asm__ volatile ("sti");
 
 
-
     new_line();
     print("Kernel initialized successfully!\n");
 
-    uint64_t last = 0;
     while (1) {
-        print("i love u so much my dear thang <3\n");
+        //print("i love u so much my dear thang <3\n");
         sleep(1000);
     }
 }

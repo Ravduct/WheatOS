@@ -11,12 +11,12 @@ mov [boot_drive], dl
 
 jmp stage2_main
 
-%include "disk.asm"
-%include "print.asm"
-%include "e820.asm"
-%include "a20.asm"
-%include "gdt.asm"
-%include "paging.asm"
+%include "asm_lib/disk.asm"
+%include "asm_lib/print.asm"
+%include "asm_lib/e820.asm"
+%include "asm_lib/a20.asm"
+%include "asm_lib/gdt.asm"
+%include "asm_lib/paging.asm"
 
 [bits 16]
 stage2_main:

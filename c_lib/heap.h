@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "bitmap.h"
-#define page_size 0x200000ULL
 
 struct block {
     uint64_t size;
@@ -13,14 +12,7 @@ struct block {
     struct block *next;
 };
 
-struct block *head;
-
-void kheap_init(void *heap_start, uint64_t heap_size) {
-    head = (struct block *)heap_start;
-    head->size = heap_size - sizeof(struct block);
-    head->free = true;
-    head->next = NULL;
-}
+struct block *head = NULL;
 
 void *kmalloc(uint64_t byte) {
     if (byte == 0 || byte > page_size - sizeof(struct block)) {

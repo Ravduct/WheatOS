@@ -1,14 +1,14 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-#include "libraries/print.h"
-#include "libraries/bitmap.h"
-#include "libraries/pic.h"
-#include "libraries/gdt_idt.h"
-#include "libraries/keyboard.h"
-#include "libraries/paging.h"
-#include "libraries/time.h"
-#include "libraries/heap.h"
+#include "c_lib/print.h"
+#include "c_lib/bitmap.h"
+#include "c_lib/pic.h"
+#include "c_lib/gdt_idt.h"
+#include "c_lib/keyboard.h"
+#include "c_lib/paging.h"
+#include "c_lib/time.h"
+#include "c_lib/heap.h"
 
 #define page_size 0x200000ULL
 extern uint64_t isr_table[32];

@@ -32,8 +32,8 @@ _start:
     call print_string
     jmp 0x0000:0x8000
 
-%include "disk.asm"
-%include "print.asm"
+%include "asm_lib/disk.asm"
+%include "asm_lib/print.asm"
 
 [bits 16]
 check_int13h:

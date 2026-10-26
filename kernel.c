@@ -192,7 +192,7 @@ void kernel_main(void *e820_map, int entry_count) {
     print("Kernel initialized successfully!\n");
 
     while (1) {
-        //print("i love u so much my dear thang <3\n");
+        print("ping\n");
         sleep(1000);
     }
 }

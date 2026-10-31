@@ -5,6 +5,7 @@
 #include "print.h"
 #include "pic.h"
 #include "time.h"
+#include "multitask.h"
 
 static bool shift_pressed = false;
 static bool is_extended = false;
@@ -123,7 +124,9 @@ void irq_handler_c(uint64_t vector) {
         break;
     case 32:
         timer_handler();
-        break;
+        outb(0x20, 0x20);
+        yield();
+        return;
     default:
         break;
     }

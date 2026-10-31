@@ -26,7 +26,6 @@ load_gdt:
 .reload_cs:
     ret
 
-[bits 64]
 load_idt:
     ; Load the IDT
     lidt [rdi]
@@ -58,7 +57,10 @@ irq_common:
     push r15
 
     mov rdi, [rsp + 120]
+
+    sub rsp, 8
     call irq_handler_c
+    add rsp, 8
 
     pop r15
     pop r14
@@ -99,7 +101,9 @@ default_exception_handler:
     mov rdi, [rsp + 120]
     mov rsi, [rsp + 128]
 
+    sub rsp, 8
     call exception_handler_c
+    add rsp, 8
 
     pop r15
     pop r14
@@ -200,3 +204,21 @@ isr_table:
     dq isr29
     dq isr30
     dq isr31
+
+global switch_task
+switch_task:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    mov [rdi], rsp
+    mov rsp, rsi
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret

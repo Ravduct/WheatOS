@@ -9,6 +9,7 @@
 #include "c_lib/paging.h"
 #include "c_lib/time.h"
 #include "c_lib/heap.h"
+#include "c_lib/multitask.h"
 
 #define page_size 0x200000ULL
 extern uint64_t isr_table[32];
@@ -74,6 +75,34 @@ extern void irq1(void);
 extern void irq0(void);
 
 // Main kernel entry point
+
+volatile uint64_t count_a = 0;
+volatile uint64_t count_b = 0;
+volatile uint64_t count_c = 0;
+
+void task_a() {
+    __asm__ volatile ("sti");
+    while (1) {
+        count_a++;
+        sleep(100);
+    }
+}
+
+void task_b() {
+    __asm__ volatile ("sti");
+    while (1) {
+        count_b++;
+        sleep(100);
+    }
+}
+
+void task_c() {
+    __asm__ volatile ("sti");
+    while (1) {
+        count_c++;
+        sleep(100);
+    }
+}
 
 void kernel_main(void *e820_map, int entry_count) {
     clear_screen();
@@ -185,14 +214,29 @@ void kernel_main(void *e820_map, int entry_count) {
 
     pic_remap();
 
+    task_t *main_task = (task_t *)kmalloc(sizeof(task_t));
+    main_task->id = next_task_id++;
+    main_task->state = task_running;
+    main_task->next = NULL;
+    current_task = main_task;
+    task_list = main_task;
+
+    create_task(task_a);
+    create_task(task_b);
+    create_task(task_c);
+
+
     __asm__ volatile ("sti");
-
-
     new_line();
     print("Kernel initialized successfully!\n");
 
+    uint64_t counter = 0;
     while (1) {
-        print("ping\n");
-        sleep(1000);
+        counter++;
+        print(int_to_str(count_a)); print(" ");
+        print(int_to_str(count_b)); print(" ");
+        print(int_to_str(count_c)); new_line();
+        
+        sleep(100);
     }
 }

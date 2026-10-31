@@ -5,9 +5,9 @@
 #include "c_lib/bitmap.h"
 #include "c_lib/pic.h"
 #include "c_lib/gdt_idt.h"
-#include "c_lib/keyboard.h"
 #include "c_lib/paging.h"
 #include "c_lib/time.h"
+#include "c_lib/keyboard.h"
 #include "c_lib/heap.h"
 #include "c_lib/multitask.h"
 
@@ -83,6 +83,11 @@ volatile uint64_t count_c = 0;
 void task_a() {
     __asm__ volatile ("sti");
     while (1) {
+        if (count_a == 50) {
+            print("Task A reached 50, exiting...\n");
+            task_exit();
+        }
+        print(int_to_str(count_a)); print(" ");
         count_a++;
         sleep(100);
     }
@@ -91,6 +96,7 @@ void task_a() {
 void task_b() {
     __asm__ volatile ("sti");
     while (1) {
+        print(int_to_str(count_b)); print(" ");
         count_b++;
         sleep(100);
     }
@@ -99,6 +105,7 @@ void task_b() {
 void task_c() {
     __asm__ volatile ("sti");
     while (1) {
+        print(int_to_str(count_c)); new_line();
         count_c++;
         sleep(100);
     }
@@ -185,11 +192,15 @@ void kernel_main(void *e820_map, int entry_count) {
 
     set_gdt_entry(0, 0, 0, 0, 0);
     // gdt for kernel code
-    set_gdt_entry(1, 0, 0, 0x9A, 0x20);
+    set_gdt_entry(1, 0, 0xFFFFF, 0x9A, 0x20);
     // gdt for kernel data
-    set_gdt_entry(2, 0, 0, 0x92, 0);
+    set_gdt_entry(2, 0, 0xFFFFF, 0x92, 0);
+    // gdt for user code
+    set_gdt_entry(3, 0, 0xFFFFF, 0xFA, 0x20);
+    // gdt for user data
+    set_gdt_entry(4, 0, 0xFFFFF, 0xF2, 0);
 
-    gdt_ptr.size = (sizeof(struct gdt_entry) * 3) - 1;
+    gdt_ptr.size = (sizeof(struct gdt_entry) * 5) - 1;
     gdt_ptr.address = (uint64_t)(uintptr_t)&gdt;
 
     load_gdt(&gdt_ptr);
@@ -213,6 +224,7 @@ void kernel_main(void *e820_map, int entry_count) {
     load_idt(&idt_ptr);
 
     pic_remap();
+    set_pit();
 
     task_t *main_task = (task_t *)kmalloc(sizeof(task_t));
     main_task->id = next_task_id++;
@@ -230,13 +242,8 @@ void kernel_main(void *e820_map, int entry_count) {
     new_line();
     print("Kernel initialized successfully!\n");
 
-    uint64_t counter = 0;
     while (1) {
-        counter++;
-        print(int_to_str(count_a)); print(" ");
-        print(int_to_str(count_b)); print(" ");
-        print(int_to_str(count_c)); new_line();
-        
-        sleep(100);
+        reap_dead_tasks();
+        __asm__ volatile ("hlt");
     }
 }

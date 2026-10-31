@@ -12,7 +12,7 @@ struct gdt_entry {
     uint8_t base_high;
 } __attribute__((packed));
 
-struct gdt_entry gdt[3];
+struct gdt_entry gdt[5];
 
 struct lgdt {
     uint16_t size;

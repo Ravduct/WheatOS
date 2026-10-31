@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "print.h"
 #include "pic.h"
-#include "time.h"
 #include "multitask.h"
 
 static bool shift_pressed = false;
@@ -112,31 +111,5 @@ void keyboard_handler(uint64_t vector) {
         }
     }
 }
-
-
-
-
-void irq_handler_c(uint64_t vector) {
-    switch (vector)
-    {
-    case 33:
-        keyboard_handler(vector);
-        break;
-    case 32:
-        timer_handler();
-        outb(0x20, 0x20);
-        yield();
-        return;
-    default:
-        break;
-    }
-
-    if (vector >= 40) {
-        outb(0xA0, 0x20);
-    }
-
-    outb(0x20, 0x20);
-}
-
 
 #endif

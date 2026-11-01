@@ -10,9 +10,13 @@
 #include "c_lib/keyboard.h"
 #include "c_lib/heap.h"
 #include "c_lib/multitask.h"
+#include "c_lib/user.h"
+#include "c_lib/syscall.h"
 
 #define page_size 0x200000ULL
 extern uint64_t isr_table[32];
+extern void load_tss();
+extern void isr128();
 
 struct e820_entry {
     uint64_t base_address;
@@ -30,7 +34,7 @@ struct gdt_entry {
     uint8_t base_high;
 } __attribute__((packed));
 
-struct gdt_entry gdt[3];
+struct gdt_entry gdt[7];
 
 struct lgdt {
     uint16_t size;
@@ -195,15 +199,20 @@ void kernel_main(void *e820_map, int entry_count) {
     set_gdt_entry(1, 0, 0xFFFFF, 0x9A, 0x20);
     // gdt for kernel data
     set_gdt_entry(2, 0, 0xFFFFF, 0x92, 0);
-    // gdt for user code
-    set_gdt_entry(3, 0, 0xFFFFF, 0xFA, 0x20);
     // gdt for user data
-    set_gdt_entry(4, 0, 0xFFFFF, 0xF2, 0);
+    set_gdt_entry(3, 0, 0xFFFFF, 0xF2, 0);
+    // gdt for user code
+    set_gdt_entry(4, 0, 0xFFFFF, 0xFA, 0x20);
 
-    gdt_ptr.size = (sizeof(struct gdt_entry) * 5) - 1;
-    gdt_ptr.address = (uint64_t)(uintptr_t)&gdt;
+    tss.rsp0 = (uint64_t)kmalloc(16384) + 16384;
+    tss.iomap_base = sizeof(tss);
+    set_tss_entry(5, (uint64_t)&tss, sizeof(tss) - 1);
+
+    gdt_ptr.size = sizeof(gdt) - 1;
+    gdt_ptr.address = (uint64_t)&gdt;
 
     load_gdt(&gdt_ptr);
+    load_tss();
 
     // Set up IDT
     idt_ptr.size = (sizeof(struct idt_entry) * 256) - 1;
@@ -220,6 +229,7 @@ void kernel_main(void *e820_map, int entry_count) {
 
     set_idt_entry(32, (uint64_t)(uintptr_t)irq0, 0x08, 0x8E, 0);
     set_idt_entry(33, (uint64_t)(uintptr_t)irq1, 0x08, 0x8E, 0);
+    set_idt_entry(0x80, (uint64_t)(uintptr_t)isr128, 0x08, 0xEE, 0);
 
     load_idt(&idt_ptr);
 
@@ -233,17 +243,17 @@ void kernel_main(void *e820_map, int entry_count) {
     current_task = main_task;
     task_list = main_task;
 
-    create_task(task_a);
-    create_task(task_b);
-    create_task(task_c);
+    // create_task(task_a);
+    // create_task(task_b);
+    // create_task(task_c);
 
 
     __asm__ volatile ("sti");
     new_line();
     print("Kernel initialized successfully!\n");
+    print("Entering user mode...\n");
 
-    while (1) {
-        reap_dead_tasks();
-        __asm__ volatile ("hlt");
-    }
+    start_user_mode();
+
+    while (1) {}
 }

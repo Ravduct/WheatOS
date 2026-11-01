@@ -9,6 +9,31 @@
 static bool shift_pressed = false;
 static bool is_extended = false;
 
+#define KBD_QUEUE_SIZE 64
+static char kbd_queue[KBD_QUEUE_SIZE];
+static uint8_t kbd_head = 0;
+static uint8_t kbd_tail = 0;
+static uint8_t kbd_count = 0;
+
+static void kbd_push(char c) {
+    if (kbd_count >= KBD_QUEUE_SIZE) return;
+    kbd_queue[kbd_tail] = c;
+    kbd_tail = (kbd_tail + 1) % KBD_QUEUE_SIZE;
+    kbd_count++;
+}
+
+char kbd_read(void) {
+    __asm__ volatile ("sti");
+    while (kbd_count == 0) {
+        __asm__ volatile ("hlt");
+    }
+    __asm__ volatile ("cli");
+    char c = kbd_queue[kbd_head];
+    kbd_head = (kbd_head + 1) % KBD_QUEUE_SIZE;
+    kbd_count--;
+    return c;
+}
+
 static const char keymap_lowercase[] = {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
@@ -106,8 +131,7 @@ void keyboard_handler(uint64_t vector) {
     } else {
         char c = keyboard_to_ascii(scancode);
         if (c != 0) {
-            char str[2] = {c, '\0'};
-            print(str);
+            kbd_push(c);
         }
     }
 }

@@ -8,6 +8,7 @@
 #define page_present 0x1
 #define page_writable 0x2
 #define page_huge 0x80
+#define page_user 0x4
 
 uint64_t pml4_index(uint64_t virt) {
     return (virt >> 39) & 0x1FF;
@@ -31,34 +32,41 @@ static inline uint64_t *get_pml4() {
     return (uint64_t *)(read_cr3() & ~0xFFFULL);
 }
 
-uint64_t *next_table(uint64_t *table, uint64_t index) {
+uint64_t *next_table(uint64_t *table, uint64_t index, int user) {
+    uint64_t flags = page_present | page_writable;
+    if (user) flags |= page_user;
+
     if (!(table[index] & page_present)) {
         uint64_t *new_table = (uint64_t *)alloc_page();
         if (new_table == NULL) return NULL;
         for (int i = 0; i < 512; i++) {
             new_table[i] = 0;
         }
-        table[index] = (uint64_t)new_table | page_present | page_writable;
-    
-    return (uint64_t *)(table[index] & ~0xFFFULL);
+        table[index] = (uint64_t)new_table | flags;
+    } else if (user) {
+        table[index] |= page_user;
     }
+
+    return (uint64_t *)(table[index] & ~0xFFFULL);
 }
 
 static inline void invlpg(uint64_t addr) {
     __asm__ volatile ("invlpg (%0)" : : "r"(addr) : "memory");
 }
 
-int map_page(uint64_t virt, uint64_t phys) {
+int map_page(uint64_t virt, uint64_t phys, int user) {
     if (virt & 0x1FFFFF || phys & 0x1FFFFF) return -1;
 
     uint64_t *pml4 = get_pml4();
-    uint64_t *pdpt = next_table(pml4, pml4_index(virt));
+    uint64_t *pdpt = next_table(pml4, pml4_index(virt), user);
     if (pdpt == NULL) return -1;
 
-    uint64_t *pd = next_table(pdpt, pdpt_index(virt));
+    uint64_t *pd = next_table(pdpt, pdpt_index(virt), user);
     if (pd == NULL) return -1;
 
-    pd[pd_index(virt)] = phys | page_present | page_writable | page_huge;
+    uint64_t flags = page_present | page_writable | page_huge;
+    if (user) flags |= page_user;
+    pd[pd_index(virt)] = phys | flags;
     invlpg(virt);
     return 0;
 }

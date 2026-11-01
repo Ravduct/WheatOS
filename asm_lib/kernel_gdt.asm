@@ -222,3 +222,72 @@ switch_task:
     pop rbp
     pop rbx
     ret
+
+global load_tss
+load_tss:
+    mov ax, 0x28
+    ltr ax
+    ret
+
+global enter_user
+enter_user:
+    mov ax, 0x1B
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    push 0x1B
+    push rsi
+    push 0x202
+    push 0x23
+    push rdi
+    iretq
+
+global isr128
+extern syscall_handler_c
+
+isr128:
+    push 0              ; dummy error code
+    push 128            ; vector
+    push rax
+    push rbx
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push rbp
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
+
+    mov rdi, [rsp + 112]        ; arg 1: syscall number
+    mov rsi, [rsp + 104]        ; arg 2: argument (e.g. string pointer)
+    
+    sub rsp, 8
+    call syscall_handler_c
+    add rsp, 8
+    mov [rsp + 112], rax
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rbp
+    pop rdi
+    pop rsi
+    pop rdx
+    pop rcx
+    pop rbx
+    pop rax
+    add rsp, 16
+    iretq

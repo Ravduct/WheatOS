@@ -6,8 +6,11 @@ nasm -f elf64 asm_lib/kernel_gdt.asm -o build/kernel_gdt.o
 truncate -s 16896 build/stage2.bin
 
 nasm -f elf64 asm_lib/kernel-entry.asm -o build/kernel-entry.o
+nasm -f elf64 asm_lib/user_prog.asm -o build/user_prog.o
+
 gcc -ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -c kernel.c -o build/kernel.o
-ld -T linker.ld build/kernel-entry.o build/kernel.o build/kernel_gdt.o -o build/kernel.elf
+
+ld -T linker.ld build/kernel-entry.o build/kernel.o build/kernel_gdt.o build/user_prog.o -o build/kernel.elf
 objcopy -O binary build/kernel.elf build/kernel.bin
 
 kernel_size=$(stat -c %s build/kernel.bin)

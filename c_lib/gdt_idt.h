@@ -12,7 +12,7 @@ struct gdt_entry {
     uint8_t base_high;
 } __attribute__((packed));
 
-struct gdt_entry gdt[5];
+struct gdt_entry gdt[7];
 
 struct lgdt {
     uint16_t size;
@@ -59,6 +59,27 @@ void set_idt_entry(int index, uint64_t offset, uint16_t selector, uint8_t type_a
     idt[index].offset_middle = (offset >> 16) & 0xFFFF;
     idt[index].offset_high = (offset >> 32) & 0xFFFFFFFF;
     idt[index].zero = 0;
+}
+
+struct tss {
+    uint32_t reserved0;
+    uint64_t rsp0;        // kernel stack used on ring 3 -> ring 0
+    uint64_t rsp1;
+    uint64_t rsp2;
+    uint64_t reserved1;
+    uint64_t ist[7];
+    uint64_t reserved2;
+    uint16_t reserved3;
+    uint16_t iomap_base;
+} __attribute__((packed));
+
+struct tss tss;
+
+void set_tss_entry(int index, uint64_t base, uint32_t limit) {
+    set_gdt_entry(index, (uint32_t)base, limit, 0x89, 0);
+    uint32_t *high = (uint32_t *)&gdt[index + 1];
+    high[0] = (uint32_t)(base >> 32);
+    high[1] = 0;
 }
 
 extern void load_idt(void *ptr);

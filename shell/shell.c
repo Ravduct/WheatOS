@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "functions.h"
 
-typedef void (*command_func)();
+typedef void (*command_func)(const char *args);
 
 typedef struct {
     const char *name;
@@ -34,7 +34,9 @@ static command_func find_command(const command_entry *command_list, size_t list_
 void shell() {
     const command_entry command_list[] = {
         {"help", help},
-        {"exit", exit}
+        {"exit", exit},
+        {"ls", ls},
+        {"touch", touch}
     };
 
     sys_print("Welcome to the shell!\n");
@@ -64,9 +66,25 @@ void shell() {
         }
 
         command[length] = '\0';
-        command_func cmd = find_command(command_list, sizeof(command_list) / sizeof(command_list[0]), command);
+
+        char *args = command;
+        while (*args && *args != ' ') {
+            args++;
+        }
+
+        if (*args == ' ') {
+            *args++ = '\0';             // End the command name here.
+            while (*args == ' ') args++; // Skip extra spaces before the argument.
+        }
+
+        command_func cmd = find_command(
+            command_list,
+            sizeof(command_list) / sizeof(command_list[0]),
+            command
+        );
+
         if (cmd) {
-            cmd();
+            cmd(*args ? args : NULL);
         } else {
             sys_print("Unknown command. Type 'help' for a list of commands.\n");
         }

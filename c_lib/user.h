@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include "heap.h"
 #include "paging.h"
-#include "syscall.h"
-#include "../shell.h"
+#include "user_syscall.h"
 
 uint64_t user_code_base = 0;
 uint64_t user_stack_base = 0;

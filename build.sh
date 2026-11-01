@@ -6,9 +6,21 @@ nasm -f elf64 asm_lib/kernel_gdt.asm -o build/kernel_gdt.o
 truncate -s 16896 build/stage2.bin
 
 nasm -f elf64 asm_lib/kernel-entry.asm -o build/kernel-entry.o
-nasm -f elf64 asm_lib/user_prog.asm -o build/user_prog.o
 
 gcc -ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -c kernel.c -o build/kernel.o
+gcc -ffreestanding -fno-stack-protector -nostdlib -mno-red-zone -fPIE \
+    -fno-asynchronous-unwind-tables -fno-unwind-tables -c shell/shell.c -o build/shell.o
+nasm -f elf64 asm_lib/user_entry.asm -o build/user-entry.o
+ld -T user.ld build/user-entry.o build/shell.o -o build/user_shell.elf
+objcopy -O binary build/user_shell.elf build/user_shell.bin
+
+user_shell_size=$(stat -c %s build/user_shell.bin)
+if [ "$user_shell_size" -gt 2097152 ]; then
+    echo "User shell image exceeds the 2 MiB code page: $user_shell_size bytes" >&2
+    exit 1
+fi
+
+nasm -f elf64 asm_lib/user_prog.asm -o build/user_prog.o
 
 ld -T linker.ld build/kernel-entry.o build/kernel.o build/kernel_gdt.o build/user_prog.o -o build/kernel.elf
 objcopy -O binary build/kernel.elf build/kernel.bin

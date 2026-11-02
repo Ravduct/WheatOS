@@ -85,6 +85,8 @@ void shell() {
 
         if (cmd) {
             cmd(*args ? args : NULL);
+        } else if (length == 0) {
+            //sys_print("Unknown command. Type 'help' for a list of commands.\n");
         } else {
             sys_print("Unknown command. Type 'help' for a list of commands.\n");
         }

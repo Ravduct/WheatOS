@@ -61,4 +61,16 @@ File *fs_create(const char *name) {
     return NULL; // Table is full.
 }
 
+int fs_write(File *file, const char *data, size_t size) {
+    if (file == NULL || data == NULL || size > DATA_SIZE) {
+        return -1; // Invalid parameters
+    }
+
+    for (size_t i = 0; i < size; i++) {
+        file->data[i] = data[i];
+    }
+    file->size = size;
+    return 0; // Success
+}
+
 #endif // FS_H

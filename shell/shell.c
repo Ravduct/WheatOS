@@ -36,10 +36,14 @@ void shell() {
         {"help", help},
         {"exit", exit},
         {"ls", ls},
-        {"touch", touch}
+        {"touch", touch},
+        {"cat", cat},
+        {"write", write},
+        {"rm", rm},
+        {"echo", echo}
     };
 
-    sys_print("Welcome to the shell!\n");
+    sys_print("Welcome to WheatOS!\n");
     while (1) {
         sys_print("> ");
         char command[80];

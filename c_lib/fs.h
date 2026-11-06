@@ -62,15 +62,27 @@ File *fs_create(const char *name) {
 }
 
 int fs_write(File *file, const char *data, size_t size) {
-    if (file == NULL || data == NULL || size > DATA_SIZE) {
+    if (file == NULL || data == NULL || size >= DATA_SIZE) {
         return -1; // Invalid parameters
     }
 
     for (size_t i = 0; i < size; i++) {
         file->data[i] = data[i];
     }
+    file->data[size] = '\0';
     file->size = size;
     return 0; // Success
+}
+
+int fs_remove(const char *name) {
+    File *file = fs_find(name);
+    if (file == NULL) return -1;
+
+    file->name[0] = '\0';
+    file->data[0] = '\0';
+    file->size = 0;
+    file->used = 0;
+    return 0;
 }
 
 #endif // FS_H

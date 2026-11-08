@@ -45,4 +45,5 @@ rm -f build/disk.vdi
 
 cat build/mbr.bin build/stage2.bin build/kernel.bin > build/disk.img
 
-qemu-system-x86_64 -drive format=raw,file=build/disk.img -m 4G
+[ -f build/fs.img ] || truncate -s 1M build/fs.img
+qemu-system-x86_64 -drive format=raw,file=build/disk.img -drive format=raw,file=build/fs.img,if=ide,index=1 -m 4G -no-shutdown -D build/qemu.log

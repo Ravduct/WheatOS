@@ -33,21 +33,29 @@ static inline void outw(uint16_t port, uint16_t value) {
 }
 
 static inline int ata_wait(void) {
-    uint8_t status;
-    int timeout = 1000000;
-
-    while ((inb(ATA_REG_STATUS) & ATA_SR_BSY) && timeout-- > 0) {
-        status = inb(ATA_REG_STATUS);
-
-        if (status & ATA_SR_ERR) {
-            return -1;
-        }
-
-        if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) {
-            return 0;
-        }
+    for (int i = 0; i < 4; i++) {
+        inb(ATA_REG_STATUS);
     }
 
+    int timeout = 1000000;
+
+    while (timeout-- > 0) {
+        uint8_t status = inb(ATA_REG_STATUS);
+
+        if (status & ATA_SR_BSY) continue;
+        if (status & (ATA_SR_ERR | 0x20)) return -1;
+        if (status & ATA_SR_DRQ) return 0;
+    }
+
+    return -1;
+}
+
+static int ata_wait_not_busy(void) {
+    for (int i = 0; i < 4; i++) inb(ATA_REG_STATUS);
+    int timeout = 1000000;
+    while (timeout-- > 0) {
+        if (!(inb(ATA_REG_STATUS) & ATA_SR_BSY)) return 0;
+    }
     return -1;
 }
 
@@ -80,7 +88,12 @@ static inline int ata_write_sector(uint32_t lba, const void *buf) {
         return -1;
     }
 
-    outb(ATA_REG_DRIVE, 0xE0 | ((lba >> 24) & 0x0F));
+    outb(ATA_REG_DRIVE, 0xF0 | ((lba >> 24) & 0x0F));
+
+    for (int i = 0; i < 4; i++) {
+        inb(ATA_REG_STATUS);
+    }
+
     outb(ATA_REG_SECTOR_COUNT, 1);
     outb(ATA_REG_LBA_LOW, (uint8_t)(lba & 0xFF));
     outb(ATA_REG_LBA_MID, (uint8_t)((lba >> 8) & 0xFF));
@@ -97,7 +110,7 @@ static inline int ata_write_sector(uint32_t lba, const void *buf) {
     }
 
     outb(ATA_REG_COMMAND, 0xE7);
-    return ata_wait();
+    return ata_wait_not_busy();
 }
 
 #endif

@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include "c_lib/ata.h"
 #include "c_lib/print.h"
 #include "c_lib/bitmap.h"
 #include "c_lib/pic.h"

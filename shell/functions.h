@@ -141,4 +141,4 @@ void echo(const char *text) {
     if (text != NULL) sys_print(text);
     sys_print("\n");
 }
-#endif // FUNCTIONS_H
+#endif

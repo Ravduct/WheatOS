@@ -46,6 +46,9 @@ uint64_t syscall_handler_c(uint64_t num, uint64_t arg) {
         return 0;
     case 4:
         return (uint64_t)(uint8_t)kbd_read();
+    case 5:
+        fs_save();
+        return 0;
     default:
         return (uint64_t)-1;
     }

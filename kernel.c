@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include "c_lib/fs.h"
 #include "c_lib/ata.h"
 #include "c_lib/print.h"
 #include "c_lib/bitmap.h"
@@ -254,6 +255,7 @@ void kernel_main(void *e820_map, int entry_count) {
     print("Kernel initialized successfully!\n");
     print("Entering user mode...\n");
 
+    fs_load();
     start_user_mode();
 
     while (1) {}

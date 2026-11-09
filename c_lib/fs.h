@@ -2,10 +2,14 @@
 #define FS_H
 
 #include <stddef.h>
+#include "ata.h"
 
 #define MAX_FILES 16
 #define NAME_SIZE 32
 #define DATA_SIZE 512
+
+#define FS_MAGIC 0x57484541
+#define FS_SECTORS ((sizeof(files) + 511) / 512)
 
 typedef struct {
     char name[NAME_SIZE];
@@ -82,6 +86,46 @@ int fs_remove(const char *name) {
     file->data[0] = '\0';
     file->size = 0;
     file->used = 0;
+    return 0;
+}
+
+int fs_save(void) {
+    uint8_t buf[512];
+
+    for (int i = 0; i < 512; i++) buf[i] = 0;
+    *(uint32_t *)buf = FS_MAGIC;
+    if (ata_write_sector(0, buf) != 0) return -1;
+
+    const uint8_t *src = (const uint8_t *)files;
+    for (size_t s = 0; s < FS_SECTORS; s++) {
+        size_t offset = s * 512;
+        size_t n = sizeof(files) - offset;
+        if (n > 512) n = 512;
+
+        for (size_t i = 0; i < 512; i++) buf[i] = (i < n) ? src[offset + i] : 0;
+        if (ata_write_sector(1 + s, buf) != 0) return -1;
+    }
+    return 0;
+}
+
+int fs_load(void) {
+    uint8_t buf[512];
+
+    if (ata_read_sector(0, buf) != 0 || *(uint32_t *)buf != FS_MAGIC) {
+        uint8_t *dst = (uint8_t *)files;
+        for (size_t i = 0; i < sizeof(files); i++) dst[i] = 0;
+        return fs_save();      // blank disk: format it
+    }
+
+    uint8_t *dst = (uint8_t *)files;
+    for (size_t s = 0; s < FS_SECTORS; s++) {
+        size_t offset = s * 512;
+        size_t n = sizeof(files) - offset;
+        if (n > 512) n = 512;
+
+        if (ata_read_sector(1 + s, buf) != 0) return -1;
+        for (size_t i = 0; i < n; i++) dst[offset + i] = buf[i];
+    }
     return 0;
 }
 

@@ -37,6 +37,7 @@ void touch(const char *filename) {
     }
 
     if (fs_create(filename) != NULL) {
+        sys_fs_save();
         sys_print("File created: ");
         sys_print(filename);
         sys_print("\n");
@@ -112,6 +113,7 @@ void write(const char *args) {
         return;
     }
 
+    sys_fs_save();
     sys_print("Wrote file: ");
     sys_print(filename);
     sys_print("\n");
@@ -124,6 +126,7 @@ void rm(const char *filename) {
     }
 
     if (fs_remove(filename) == 0) {
+        sys_fs_save();
         sys_print("Removed file: ");
         sys_print(filename);
         sys_print("\n");

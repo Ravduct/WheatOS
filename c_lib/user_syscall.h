@@ -21,4 +21,8 @@ static inline char sys_read(void) {
     return (char)c;
 }
 
+static inline void sys_fs_save(void) {
+    __asm__ volatile ("int $0x80" : : "a"(5) : "memory");
+}
+
 #endif

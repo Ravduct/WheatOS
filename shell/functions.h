@@ -2,7 +2,7 @@
 #define FUNCTIONS_H
 
 #include "../c_lib/user_syscall.h"
-#include "../c_lib/fs.h"
+#include <stddef.h>
 
 void help(const char *args) {
     sys_print("Available commands:\n");
@@ -22,12 +22,7 @@ void exit(const char *args) {
 }
 
 void ls(const char *args) {
-    for (size_t i = 0; i < MAX_FILES; i++) {
-        if (files[i].used) {
-            sys_print(files[i].name);
-            sys_print("\n");
-        }
-    }
+    sys_fs_list();
 }
 
 void touch(const char *filename) {
@@ -36,8 +31,10 @@ void touch(const char *filename) {
         return;
     }
 
-    if (fs_create(filename) != NULL) {
-        sys_fs_save();
+    int result = sys_fs_create(filename);
+    if (result == -2) {
+        sys_print("File changed in memory, but saving to disk failed\n");
+    } else if (result == 0) {
         sys_print("File created: ");
         sys_print(filename);
         sys_print("\n");
@@ -54,16 +51,13 @@ void cat(const char *filename) {
         return;
     }
 
-    File *file = fs_find(filename);
-    if (file == NULL) {
+    if (sys_fs_cat(filename) != 0) {
         sys_print("File not found: ");
         sys_print(filename);
         sys_print("\n");
         return;
     }
 
-    sys_print(file->data);
-    sys_print("\n");
 }
 
 void write(const char *args) {
@@ -104,16 +98,18 @@ void write(const char *args) {
         return;
     }
 
-    File *file = fs_find(filename);
-    if (file == NULL) file = fs_create(filename);
-    if (file == NULL || fs_write(file, text, length) != 0) {
+    int result = sys_fs_write(filename, text);
+    if (result == -2) {
+        sys_print("File changed in memory, but saving to disk failed\n");
+        return;
+    }
+    if (result != 0) {
         sys_print("Failed to write file: ");
         sys_print(filename);
         sys_print("\n");
         return;
     }
 
-    sys_fs_save();
     sys_print("Wrote file: ");
     sys_print(filename);
     sys_print("\n");
@@ -125,8 +121,10 @@ void rm(const char *filename) {
         return;
     }
 
-    if (fs_remove(filename) == 0) {
-        sys_fs_save();
+    int result = sys_fs_remove(filename);
+    if (result == -2) {
+        sys_print("File changed in memory, but saving to disk failed\n");
+    } else if (result == 0) {
         sys_print("Removed file: ");
         sys_print(filename);
         sys_print("\n");

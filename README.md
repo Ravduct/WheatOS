@@ -55,3 +55,14 @@ When you have those things ready, you are ready to run the `build.sh` file and i
 ```bash
 ./build.sh
 ```
+
+### Saving files
+
+Inside WheatOS, use `write notes hello` to create a file with text, `cat notes`
+to read it, and `ls` to list files. `touch` creates an empty file and `rm` deletes
+a file. Changes are automatically saved by the kernel to `build/fs.img`.
+
+You can stop QEMU and run `./build.sh` again; the script preserves `build/fs.img`
+and WheatOS loads your files at startup. Keep this image when cleaning or moving
+the build directory, since deleting it deletes your saved files. If saving fails,
+the shell reports that the change exists only in memory.

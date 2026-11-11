@@ -3,10 +3,7 @@
 
 #include <stddef.h>
 #include "ata.h"
-
-#define MAX_FILES 16
-#define NAME_SIZE 32
-#define DATA_SIZE 512
+#include "fs_api.h"
 
 #define FS_MAGIC 0x57484541
 #define FS_SECTORS ((sizeof(files) + 511) / 512)

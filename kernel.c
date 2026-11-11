@@ -255,7 +255,9 @@ void kernel_main(void *e820_map, int entry_count) {
     print("Kernel initialized successfully!\n");
     print("Entering user mode...\n");
 
-    fs_load();
+    if (fs_load() != 0) {
+        print("Failed to load filesystem from disk\n");
+    }
     start_user_mode();
 
     while (1) {}

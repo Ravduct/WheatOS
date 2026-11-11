@@ -8,6 +8,7 @@
 #include "multitask.h"
 #include "time.h"
 #include "user_syscall.h"
+#include "fs.h"
 
 extern uint64_t user_code_base;
 extern uint64_t user_stack_base;
@@ -47,8 +48,51 @@ uint64_t syscall_handler_c(uint64_t num, uint64_t arg) {
     case 4:
         return (uint64_t)(uint8_t)kbd_read();
     case 5:
-        fs_save();
+        return fs_save() == 0 ? 0 : (uint64_t)-2;
+    case 6:
+        if (!user_string_ok(arg) || fs_create((const char *)arg) == NULL) {
+            return (uint64_t)-1;
+        }
+        return fs_save() == 0 ? 0 : (uint64_t)-2;
+    case 7: {
+        for (size_t i = 0; i < sizeof(fs_write_request); i++) {
+            if (arg + i < arg || !user_addr_ok(arg + i)) return (uint64_t)-1;
+        }
+        fs_write_request request = *(const fs_write_request *)arg;
+        if (!user_string_ok((uint64_t)request.name) ||
+            !user_string_ok((uint64_t)request.text)) return (uint64_t)-1;
+        size_t length = 0;
+        while (request.text[length]) {
+            if (++length >= DATA_SIZE) return (uint64_t)-1;
+        }
+        File *file = fs_find(request.name);
+        if (file == NULL) file = fs_create(request.name);
+        if (file == NULL || fs_write(file, request.text, length) != 0) {
+            return (uint64_t)-1;
+        }
+        return fs_save() == 0 ? 0 : (uint64_t)-2;
+    }
+    case 8:
+        if (!user_string_ok(arg) || fs_remove((const char *)arg) != 0) {
+            return (uint64_t)-1;
+        }
+        return fs_save() == 0 ? 0 : (uint64_t)-2;
+    case 9:
+        for (size_t i = 0; i < MAX_FILES; i++) {
+            if (files[i].used) {
+                print(files[i].name);
+                print("\n");
+            }
+        }
         return 0;
+    case 10: {
+        if (!user_string_ok(arg)) return (uint64_t)-1;
+        File *file = fs_find((const char *)arg);
+        if (file == NULL) return (uint64_t)-1;
+        print(file->data);
+        print("\n");
+        return 0;
+    }
     default:
         return (uint64_t)-1;
     }
